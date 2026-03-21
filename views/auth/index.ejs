@@ -1,0 +1,9 @@
+<h1>Community Platform Home</h1>
+
+<p>This is the homepage.</p>
+
+<% if (userId) { %>
+  <p>Logged in as: <%= fullName %> (<%= role %>)</p>
+<% } else { %>
+  <p>You are not logged in.</p>
+<% } %>

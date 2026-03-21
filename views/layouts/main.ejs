@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title><%= title %></title>
+</head>
+<body>
+  <nav>
+        <a href="/">Home</a> |
+        <% if (!userId) { %>
+            <a href="/register">Register</a> |
+            <a href="/login">Login</a>
+        <% } else { %>
+            <span>Welcome, <%= fullName %></span> |
+            <a href="/dashboard">Dashboard</a> |
+            <a href="/logout">Logout</a>
+        <% } %>
+</nav>
+  <hr>
+  <!-- TEMP TEST -->
+  <p>User: <%= fullName %></p>
+  <%- body %>
+</body>
+</html>
