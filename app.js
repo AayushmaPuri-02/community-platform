@@ -7,6 +7,10 @@ const methodOverride = require("method-override");
 const expressLayouts = require("express-ejs-layouts");
 const {isLoggedIn, isOrganization} = require("./middleware/authMiddleware")
 const authRoutes = require("./routes/authRoutes");
+const postRoutes = require("./routes/postRoutes");
+const Post = require("./models/Post");
+const Comment = require("./models/Comment");
+
 
 dotenv.config();
 
@@ -47,11 +51,30 @@ app.set("views", path.join(__dirname, "views"));
 app.set("layout", "layouts/main");
 
 // Routes
-app.get("/", (req, res) => {
-  res.render("auth/index", { title: "Home" });
+app.get("/", async (req, res) => {
+  try {
+    const posts = await Post.find({})
+      .populate("author")
+      .sort({ createdAt: -1 });
+
+    // attach comment count to each post
+    for (let post of posts) {
+      const count = await Comment.countDocuments({ post: post._id });
+      post.commentCount = count;
+    }
+
+    res.render("auth/index", {
+      title: "Home",
+      posts,
+    });
+  } catch (err) {
+    console.log(err);
+    res.send("Error loading homepage");
+  }
 });
 
 app.use("/", authRoutes);
+app.use("/", postRoutes);
 
 app.get("/dashboard", isLoggedIn, (req, res) => {
   res.send("Welcome to dashboard");

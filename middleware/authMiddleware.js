@@ -25,3 +25,10 @@ module.exports.canCreatePost = (req, res, next) => {
 
   next();
 };
+
+module.exports.isLoggedOut = (req, res, next) => {
+  if (req.session.userId) {
+    return res.redirect("/");
+  }
+  next();
+};

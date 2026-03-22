@@ -1,9 +1,37 @@
 <h1>Community Platform Home</h1>
 
-<p>This is the homepage.</p>
-
 <% if (userId) { %>
   <p>Logged in as: <%= fullName %> (<%= role %>)</p>
 <% } else { %>
   <p>You are not logged in.</p>
 <% } %>
+
+<hr>
+
+<h2>Posts</h2>
+
+<% if (posts.length === 0) { %>
+  <p>No posts yet.</p>
+<% } %>
+
+<% posts.forEach(post => { %>
+  <div style="border:1px solid black; margin-bottom:10px; padding:10px;">
+    <h3>
+        <a href="/posts/<%= post._id %>"><%= post.title %></a>
+    </h3>
+    <p><strong>Type:</strong> <%= post.type %></p>
+    <p><%= post.description %></p>
+    <p>
+      <strong>Tags:</strong>
+      <%= post.tags.length ? post.tags.join(", ") : "No tags" %>
+    </p>
+    <p>
+      <strong>Posted by:</strong>
+      <%= post.author ? post.author.fullName : "Unknown" %>
+    </p>
+    <p><strong>Posted at:</strong> <%= post.createdAt.toLocaleString() %></p>
+    <p>
+    <a href="/posts/<%= post._id %>">💬 Comments <%= post.commentCount %></a>
+</p>
+  </div>
+<% }) %>

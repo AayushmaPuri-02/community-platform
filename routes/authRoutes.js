@@ -1,13 +1,14 @@
 const express = require("express");
 const router = express.Router();
+const { isLoggedOut } = require("../middleware/authMiddleware");
 
 const authController = require("../controllers/authController");
 
-router.get("/register", authController.getRegister);
-router.post("/register", authController.postRegister);
+router.get("/register", isLoggedOut, authController.getRegister);
+router.post("/register", isLoggedOut, authController.postRegister);
 
-router.get("/login", authController.getLogin);
-router.post("/login", authController.postLogin);
+router.get("/login", isLoggedOut, authController.getLogin);
+router.post("/login", isLoggedOut, authController.postLogin);
 
 router.get("/logout", authController.logout);
 

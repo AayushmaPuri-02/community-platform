@@ -1,0 +1,32 @@
+<h1>Create Post</h1>
+
+<form action="/posts" method="POST">
+
+  <div>
+    <label>Title:</label>
+    <input type="text" name="title" required>
+  </div>
+
+  <div>
+    <label>Description:</label>
+    <textarea name="description" required></textarea>
+  </div>
+
+  <div>
+    <label>Type:</label>
+    <select name="type" required>
+      <option value="event">Event</option>
+      <option value="volunteer">Volunteer</option>
+      <option value="alert">Alert</option>
+      <option value="training">Training</option>
+      <option value="communityUpdate">Community Update</option>
+    </select>
+  </div>
+
+  <div>
+    <label>Tags (comma separated):</label>
+    <input type="text" name="tags">
+  </div>
+
+  <button type="submit">Create Post</button>
+</form>
