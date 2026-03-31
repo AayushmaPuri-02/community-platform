@@ -1,7 +1,16 @@
+
+
+<p>
+  <a href="<%= backUrl %>" class="btn btn-outline-secondary btn-sm">← Back</a>
+</p>
+
 <h1><%= post.title %></h1>
 
 <p><strong>Type:</strong> <%= post.type %></p>
-<p><strong>Posted by:</strong> <%= post.author.fullName %></p>
+<p>
+  <strong>Posted by:</strong>
+  <%= post.author.organizationName || post.author.fullName %>
+</p>
 <p><strong>Posted at:</strong> <%= post.createdAt.toLocaleString() %></p>
 
 <p><%= post.description %></p>
@@ -16,13 +25,17 @@
   </form>
 <% } %>
 <hr>
+<% if (userId && post.author._id.toString() === userId) { %>
+  <a href="/posts/<%= post._id %>/edit">Edit Post</a>
+<% } %>
+<hr>
 
 <h3>Add Comment</h3>
 
 <form action="/posts/<%= post._id %>/comments" method="POST">
   <textarea name="text" required></textarea>
   <br>
-  <button type="submit">Comment</button>
+  <button type="submit" class="btn btn-primary">Comment</button>
 </form>
 
 <hr>
@@ -35,16 +48,34 @@
 
 <% comments.forEach(comment => { %>
   <div style="border:1px solid gray; margin-bottom:10px; padding:10px;">
-    <p><strong><%= comment.author.fullName %></strong></p>
+    <p><strong><%= comment.author.organizationName || comment.author.fullName %></strong></p>
+    <% if (comment.isPinned) { %>
+  <p><strong>📌 Pinned Comment</strong></p>
+<% } %>
     <p><%= comment.text %></p>
     <p><small><%= comment.createdAt.toLocaleString() %></small></p>
   </div>
 
-  <% if (userId && comment.author._id.toString() === userId) { %>
-  <form action="/comments/<%= comment._id %>/delete" method="POST">
+<% if (
+  userId &&
+  (
+    comment.author._id.toString() === userId ||
+    post.author._id.toString() === userId
+  )
+) { %>
+  <form action="/comments/<%= comment._id %>/delete" method="POST" style="display:inline;">
     <button type="submit">Delete</button>
   </form>
 <% } %>
+
+<% if (userId && post.author._id.toString() === userId) { %>
+  <form action="/comments/<%= comment._id %>/pin" method="POST" style="display:inline;">
+    <button type="submit">
+      <%= comment.isPinned ? "Unpin" : "Pin" %>
+    </button>
+  </form>
+<% } %>
+
 <% if (userId && comment.author._id.toString() === userId) { %>
   <a href="/comments/<%= comment._id %>/edit">Edit</a>
 <% } %>

@@ -1,0 +1,108 @@
+<h2 class="mb-4">Connections</h2>
+
+<h4 class="mb-3">Following</h4>
+
+<% if (followingUsers.length === 0) { %>
+  <p class="text-muted">You are not following anyone yet.</p>
+<% } %>
+
+<div class="row mb-5">
+  <% followingUsers.forEach(user => { %>
+    <div class="col-md-4 mb-4">
+      <div class="card h-100 shadow-sm border-0" style="border-radius: 12px;">
+        <div class="card-body">
+          
+          <div class="d-flex align-items-start gap-3 mb-3">
+            <% if (user.profileImage) { %>
+              <img src="<%= user.profileImage %>" 
+                   class="rounded-circle border" 
+                   style="width:50px; height:50px; object-fit:cover;">
+            <% } else { %>
+              <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                <i class="bi bi-person text-secondary"></i>
+              </div>
+            <% } %>
+
+            <div class="flex-grow-1">
+              <h6 class="mb-0 fw-bold">
+                <a href="/users/<%= user._id %>?from=following" class="text-decoration-none text-dark">
+                  <%= user.organizationName || user.fullName %>
+                </a>
+              </h6>
+            </div>
+          </div>
+
+          <% if (user.bio) { %>
+            <p class="card-text text-muted mb-4" style="font-size: 0.85rem; line-height: 1.4;">
+              <%= user.bio.substring(0, 80) %><%= user.bio.length > 80 ? '...' : '' %>
+            </p>
+          <% } %>
+
+          <div class="d-flex gap-2">
+            <a href="/users/<%= user._id %>?from=following" class="btn btn-primary btn-sm px-3 flex-grow-1">
+              Visit
+            </a>
+            
+            <form action="/follow/<%= user._id %>/toggle" method="POST" class="flex-grow-1">
+              <button class="btn btn-danger btn-sm w-100 px-3" style="background-color: #e57373; border: none;">
+                Following
+              </button>
+            </form>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  <% }) %>
+</div>
+
+<% if (role === "organization" || role === "communityAdmin") { %>
+  <h4 class="mb-3">Followers</h4>
+
+  <% if (followerUsers.length === 0) { %>
+    <p class="text-muted">No followers yet.</p>
+  <% } %>
+
+  <div class="row">
+    <% followerUsers.forEach(user => { %>
+      <div class="col-md-4 mb-4">
+        <div class="card h-100 shadow-sm border-0" style="border-radius: 12px;">
+          <div class="card-body">
+
+            <div class="d-flex align-items-start gap-3 mb-3">
+              <% if (user.profileImage) { %>
+                <img src="<%= user.profileImage %>" 
+                     class="rounded-circle border" 
+                     style="width:50px; height:50px; object-fit:cover;">
+              <% } else { %>
+                <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                  <i class="bi bi-person text-secondary"></i>
+                </div>
+              <% } %>
+
+              <div class="flex-grow-1">
+                <h6 class="mb-0 fw-bold">
+                  <a href="/users/<%= user._id %>?from=followers" class="text-decoration-none text-dark">
+                    <%= user.organizationName || user.fullName %>
+                  </a>
+                </h6>
+                <small class="text-muted"><%= user.role %></small>
+              </div>
+            </div>
+
+            <% if (user.bio) { %>
+              <p class="card-text text-muted mb-3" style="font-size: 0.85rem; line-height: 1.4;">
+                <%= user.bio.substring(0, 80) %><%= user.bio.length > 80 ? '...' : '' %>
+              </p>
+            <% } %>
+
+            <a href="/users/<%= user._id %>?from=followers" class="btn btn-outline-dark btn-sm w-100">
+              View Profile
+            </a>
+
+          </div>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+<% } %>

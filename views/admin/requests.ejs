@@ -1,0 +1,32 @@
+<p>
+  <a href="/admin" class="btn btn-outline-secondary btn-sm">← Back to Admin Dashboard</a>
+</p>
+
+<h2>Pending Verification Requests</h2>
+
+<% if (pendingUsers.length === 0) { %>
+  <p>No pending requests.</p>
+<% } %>
+
+<% pendingUsers.forEach(user => { %>
+  <div style="border:1px solid black; padding:10px; margin-bottom:10px;">
+    
+    <p>
+      <strong>Name:</strong>
+      <%= user.organizationName || user.fullName %>
+    </p>
+
+    <p>
+      <strong>Role:</strong>
+      <%= user.role %>
+    </p>
+
+    <p>
+      <strong>Requested At:</strong>
+      <%= user.createdAt.toLocaleString() %>
+    </p>
+
+    <a href="/admin/requests/<%= user._id %>">View</a>
+
+  </div>
+<% }) %>

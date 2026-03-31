@@ -1,0 +1,36 @@
+<p>
+<a href="/posts/<%= post._id %>" class="btn btn-outline-secondary btn-sm">
+  ← Back to Post
+</a>
+</p>
+<h1>Edit Post</h1>
+
+<form action="/posts/<%= post._id %>/edit" method="POST">
+  <div>
+    <label>Title:</label>
+    <input type="text" name="title" value="<%= post.title %>" required>
+  </div>
+
+  <div>
+    <label>Description:</label>
+    <textarea name="description" required><%= post.description %></textarea>
+  </div>
+
+  <div>
+    <label>Type:</label>
+    <select name="type" required>
+      <option value="event" <%= post.type === "event" ? "selected" : "" %>>Event</option>
+      <option value="volunteer" <%= post.type === "volunteer" ? "selected" : "" %>>Volunteer</option>
+      <option value="alert" <%= post.type === "alert" ? "selected" : "" %>>Alert</option>
+      <option value="training" <%= post.type === "training" ? "selected" : "" %>>Training</option>
+      <option value="communityUpdate" <%= post.type === "communityUpdate" ? "selected" : "" %>>Community Update</option>
+    </select>
+  </div>
+
+  <div>
+    <label>Tags (comma separated):</label>
+    <input type="text" name="tags" value="<%= post.tags.join(", ") %>">
+  </div>
+
+  <button type="submit">Update Post</button>
+</form>

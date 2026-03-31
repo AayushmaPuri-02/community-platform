@@ -32,3 +32,15 @@ module.exports.isLoggedOut = (req, res, next) => {
   }
   next();
 };
+
+module.exports.isSystemAdmin = (req, res, next) => {
+  if (!req.session.userId) {
+    return res.send("You must be logged in first");
+  }
+
+  if (req.session.role !== "systemAdmin") {
+    return res.send("Access denied: System admin only");
+  }
+
+  next();
+};

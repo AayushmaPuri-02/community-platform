@@ -1,5 +1,57 @@
 <h1>Create Post</h1>
+<p>
+  <a href="/" class="btn btn-outline-secondary btn-sm mb-3">← Back to Home</a>
+</p>
 
+<div class="card shadow-sm">
+  <div class="card-body">
+    <form action="/posts" method="POST">
+
+      <div class="mb-3">
+        <label class="form-label fw-bold">Title:</label>
+        <input type="text" name="title" class="form-control" placeholder="Enter post title" required>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-bold">Description:</label>
+        <textarea name="description" class="form-control" rows="4" placeholder="What's on your mind?" required></textarea>
+      </div>
+
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label fw-bold">Type:</label>
+          <select name="type" class="form-select" required>
+            <option value="" selected disabled>Choose a category...</option>
+            <option value="event">Event</option>
+            <option value="volunteer">Volunteer</option>
+            <option value="alert">Alert</option>
+            <option value="training">Training</option>
+            <option value="communityUpdate">Community Update</option>
+          </select>
+        </div>
+
+        <div class="col-md-6 mb-3">
+          <label class="form-label fw-bold">Tags:</label>
+          <input type="text" name="tags" class="form-control" placeholder="e.g. news, help, urgent">
+          <div class="form-text">Separate tags with commas.</div>
+        </div>
+      </div>
+
+      <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+        <button type="submit" class="btn btn-primary px-4">Create Post</button>
+      </div>
+      
+    </form>
+  </div>
+</div>
+
+
+
+
+<!-- <h1>Create Post</h1>
+<p>
+  <a href="/" class="btn btn-outline-secondary btn-sm">← Back to Home</a>
+</p>
 <form action="/posts" method="POST">
 
   <div>
@@ -29,4 +81,4 @@
   </div>
 
   <button type="submit">Create Post</button>
-</form>
+</form> -->

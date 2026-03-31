@@ -3,19 +3,26 @@ const bcrypt = require("bcrypt");
 
 // GET register page
 exports.getRegister = (req, res) => {
-  res.render("auth/register", { title: "Register" });
+  res.render("auth/register", { title: "Register",hideSidebar: true });
 };
 
 // POST register
 exports.postRegister = async (req, res) => {
-  const { fullName, email, password, confirmPassword, location, role } = req.body;
+  const { fullName, organizationName, email, password, confirmPassword, location,mobileNumber, socialMediaLink,role } = req.body;
 
-  if (!fullName || !email || !password || !confirmPassword) {
+  const verificationDoc = req.file ? req.file.path : null; //for oraganixzation added later
+  console.log("hello",req.file);
+
+  if (!email || !password || !confirmPassword || !role) {
     return res.send("All required fields must be filled");
+  }
+  const allowedRoles = ["citizen", "organization", "communityAdmin"];
+
+  if (!allowedRoles.includes(role)) {
+    return res.send("Invalid role selected");
   }
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
   if (!emailRegex.test(email)) {
     return res.send("Enter a valid email address");
   }
@@ -28,6 +35,21 @@ exports.postRegister = async (req, res) => {
     return res.send("Passwords do not match");
   }
 
+  if (role === "citizen" && !fullName) {
+    return res.send("Full name is required for citizens");
+  }
+
+  if (role === "organization" && !organizationName) {
+    return res.send("Organization name is required");
+  }
+
+  if (role === "communityAdmin" && (!fullName || !mobileNumber)) {
+    return res.send("Full name and mobile number are required for community admins");
+  }
+
+    if ((role === "organization" || role === "communityAdmin") && !verificationDoc) { //this is also added later for orgnization
+    return res.send("Verification document is required");
+  } 
   try {
     const existingUser = await User.findOne({ email });
 
@@ -35,29 +57,27 @@ exports.postRegister = async (req, res) => {
       return res.send("Email already registered");
     }
 
-const allowedRoles = ["citizen", "organization", "communityAdmin"];
-
-if (!allowedRoles.includes(role)) {
-  return res.send("Invalid role selected");
-}
-
-const user = new User({
-  fullName,
-  email,
-  password,
-  location,
-  role,
-});
-
+    const user = new User({
+      fullName: role !== "organization" ? fullName : undefined,
+      organizationName: role === "organization" ? organizationName : undefined,
+      email, password, location,
+      mobileNumber: role === "communityAdmin" ? mobileNumber : undefined,
+      socialMediaLink: role === "organization" ? socialMediaLink : undefined,
+      role,
+      verificationDoc,
+    });
+    console.log("This is user",user);
     await user.save();
-// Auto-login only citizens
-if (user.role === "citizen") {
+
+    if (user.role === "citizen") {
   req.session.userId = user._id;
   req.session.role = user.role;
   req.session.fullName = user.fullName;
+
+  return res.redirect("/");
 }
-    // res.send("User registered successfully");
-    res.redirect("/");
+    // for organization and community admin
+    return res.send("Your registration is pending . You will be able to login after approval.");
   } catch (err) {
     console.log(err);
     res.send("Error registering user");
@@ -66,7 +86,7 @@ if (user.role === "citizen") {
 
 // GET login page
 exports.getLogin = (req, res) => {
-  res.render("auth/login", { title: "Login" });
+  res.render("auth/login", { title: "Login",hideSidebar: true });
 };
 
 // POST login
@@ -84,27 +104,43 @@ exports.postLogin = async (req, res) => {
       return res.send("Invalid email or password");
     }
 
+    if (user.status === "rejected") {
+      return res.send(`Your registration was rejected: ${user.rejectionReason}`);
+    }
+
+    if (!user.isApproved) {
+      return res.send("Your account is pending ");
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
       return res.send("Invalid email or password");
     }
 
-    // IMPORTANT: approval check
-    if (!user.isApproved) {
-      return res.send("Your account is pending approval");
-    }
+req.session.userId = user._id;
+req.session.role = user.role;
+req.session.fullName = user.fullName;
+req.session.organizationName = user.organizationName;
 
-    // store session
-    req.session.userId = user._id;
-    req.session.role = user.role;
-    req.session.fullName = user.fullName;
+// system admin goes to admin dashboard
+if (user.role === "systemAdmin") {
+  return res.redirect("/admin");
+}
 
-    // res.send("Login successful");
-    res.redirect("/");
+// force profile setup for org/community admin (first login only)
+if (
+  (user.role === "organization" || user.role === "communityAdmin") &&
+  !user.profileCompleted
+) {
+  return res.redirect("/profile/edit");
+}
+
+// everyone else
+return res.redirect("/");
   } catch (err) {
     console.log(err);
-    res.send("Error logging in");
+    return res.send("Error logging in");
   }
 };
 
@@ -114,6 +150,6 @@ exports.logout = (req, res) => {
       return res.send("Error logging out");
     }
 
-    res.send("Logged out successfully");
+    return res.redirect("/");
   });
 };

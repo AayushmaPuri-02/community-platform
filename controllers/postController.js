@@ -32,7 +32,12 @@ exports.getPostById = async (req, res) => {
 
     const comments = await Comment.find({ post: req.params.id })   //this section is updated
       .populate("author")
-      .sort({ createdAt: -1 });
+      .sort({isPinned: -1, createdAt: -1 });
+
+ let backUrl = "/";
+    if (req.query.from === "profile" && req.query.userId) {
+      backUrl = `/users/${req.query.userId}`;
+    }
 
     if (!post) {
       return res.send("Post not found");
@@ -41,7 +46,8 @@ exports.getPostById = async (req, res) => {
     res.render("posts/show", {
       title: post.title,
       post,
-      comments,   //this is added after the comment model is added
+      comments, 
+      backUrl,  //this is added after the comment model is added
     });
   } catch (err) {
     console.log(err);
@@ -70,26 +76,28 @@ exports.createComment = async (req, res) => {
 
 exports.deleteComment = async (req, res) => {
   try {
-    const comment = await Comment.findById(req.params.id);
+    const comment = await Comment.findById(req.params.id).populate("post");
 
     if (!comment) {
       return res.send("Comment not found");
     }
 
-    // Only author can delete
-    if (comment.author.toString() !== req.session.userId) {
-      return res.send("Unauthorized");
+    // comment author OR post author can delete
+    if (
+      comment.author.toString() !== req.session.userId &&
+      comment.post.author.toString() !== req.session.userId
+    ) {
+      return res.send("Not authorized");
     }
 
     await Comment.findByIdAndDelete(req.params.id);
 
-    res.redirect(`/posts/${comment.post}`);
+    return res.redirect(`/posts/${comment.post._id || comment.post}`);
   } catch (err) {
     console.log(err);
-    res.send("Error deleting comment");
+    return res.send("Error deleting comment");
   }
 };
-
 exports.getEditComment = async (req, res) => {
   try {
     const comment = await Comment.findById(req.params.id);
@@ -157,5 +165,55 @@ exports.deletePost = async (req, res) => {
   } catch (err) {
     console.log(err);
     res.send("Error deleting post");
+  }
+};
+
+exports.getEditPost = async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+
+    if (!post) {
+      return res.send("Post not found");
+    }
+
+    if (post.author.toString() !== req.session.userId) {
+      return res.send("Unauthorized");
+    }
+
+    res.render("posts/edit", {
+      title: "Edit Post",
+      post,
+    });
+  } catch (err) {
+    console.log(err);
+    res.send("Error loading edit post page");
+  }
+};
+
+exports.updatePost = async (req, res) => {
+  try {
+    const { title, description, type, tags } = req.body;
+
+    const post = await Post.findById(req.params.id);
+
+    if (!post) {
+      return res.send("Post not found");
+    }
+
+    if (post.author.toString() !== req.session.userId) {
+      return res.send("Unauthorized");
+    }
+
+    post.title = title;
+    post.description = description;
+    post.type = type;
+    post.tags = tags ? tags.split(",").map(tag => tag.trim()) : [];
+
+    await post.save();
+
+    res.redirect(`/posts/${post._id}`);
+  } catch (err) {
+    console.log(err);
+    res.send("Error updating post");
   }
 };
