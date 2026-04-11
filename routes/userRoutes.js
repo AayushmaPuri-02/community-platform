@@ -4,8 +4,7 @@ const User = require("../models/User");
 const Post = require("../models/Post");
 const Follow = require("../models/Follow");
 
-//this is for the profile section of the user
-
+// profile page
 router.get("/:id", async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
@@ -27,13 +26,24 @@ router.get("/:id", async (req, res) => {
       isFollowing = !!existingFollow;
     }
 
-    let backUrl = null;
+    let followerCount = 0;
+    let followingCount = 0;
 
-    if (req.query.from === "following") {
-      backUrl = "/following";
+    // organizations/community admins can have followers
+    if (user.role === "organization" || user.role === "communityAdmin") {
+      followerCount = await Follow.countDocuments({
+        following: user._id,
+      });
     }
 
-    if (req.query.from === "followers") {
+    // citizens and organizations/community admins can follow others
+    followingCount = await Follow.countDocuments({
+      follower: user._id,
+    });
+
+    let backUrl = null;
+
+    if (req.query.from === "following" || req.query.from === "followers") {
       backUrl = "/following";
     }
 
@@ -42,7 +52,11 @@ router.get("/:id", async (req, res) => {
       user,
       posts,
       isFollowing,
+      followerCount,
+      followingCount,
       backUrl,
+      userId: req.session.userId,
+      role: req.session.role,
     });
   } catch (err) {
     console.log(err);

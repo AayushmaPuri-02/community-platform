@@ -1,92 +1,159 @@
 const User = require("../models/User");
 const bcrypt = require("bcrypt");
+const { sendEmail } = require("../utils/mailer");
+const crypto = require("crypto");
 
 // GET register page
 exports.getRegister = (req, res) => {
-  res.render("auth/register", { title: "Register",hideSidebar: true });
+  res.render("auth/register", {
+    title: "Register",
+    hideSidebar: true,
+  });
 };
 
 // POST register
 exports.postRegister = async (req, res) => {
-  const { fullName, organizationName, email, password, confirmPassword, location,mobileNumber, socialMediaLink,role } = req.body;
+  const {
+    fullName,
+    organizationName,
+    email,
+    password,
+    confirmPassword,
+    location,
+    mobileNumber,
+    socialMediaLink,
+    role,
+  } = req.body;
 
-  const verificationDoc = req.file ? req.file.path : null; //for oraganixzation added later
-  console.log("hello",req.file);
+  const verificationDoc = req.file ? req.file.path : null;
 
   if (!email || !password || !confirmPassword || !role) {
-    return res.send("All required fields must be filled");
+    req.flash("error", "All required fields must be filled");
+    return res.redirect("/register");
   }
+
   const allowedRoles = ["citizen", "organization", "communityAdmin"];
 
   if (!allowedRoles.includes(role)) {
-    return res.send("Invalid role selected");
+    req.flash("error", "Invalid role selected");
+    return res.redirect("/register");
   }
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
-    return res.send("Enter a valid email address");
+    req.flash("error", "Enter a valid email address");
+    return res.redirect("/register");
   }
 
   if (password.length < 6) {
-    return res.send("Password must be at least 6 characters");
+    req.flash("error", "Password must be at least 6 characters");
+    return res.redirect("/register");
   }
 
   if (password !== confirmPassword) {
-    return res.send("Passwords do not match");
+    req.flash("error", "Passwords do not match");
+    return res.redirect("/register");
   }
 
   if (role === "citizen" && !fullName) {
-    return res.send("Full name is required for citizens");
+    req.flash("error", "Full name is required for citizens");
+    return res.redirect("/register");
   }
 
   if (role === "organization" && !organizationName) {
-    return res.send("Organization name is required");
+    req.flash("error", "Organization name is required");
+    return res.redirect("/register");
   }
 
   if (role === "communityAdmin" && (!fullName || !mobileNumber)) {
-    return res.send("Full name and mobile number are required for community admins");
+    req.flash("error", "Full name and mobile number are required for community admins");
+    return res.redirect("/register");
   }
 
-    if ((role === "organization" || role === "communityAdmin") && !verificationDoc) { //this is also added later for orgnization
-    return res.send("Verification document is required");
-  } 
+  if ((role === "organization" || role === "communityAdmin") && !verificationDoc) {
+    req.flash("error", "Verification document is required");
+    return res.redirect("/register");
+  }
+
   try {
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
-      return res.send("Email already registered");
+      req.flash("error", "Email already registered");
+      return res.redirect("/register");
     }
+
+  let token = "";
+
+if (role === "citizen") {
+  token = crypto.randomBytes(32).toString("hex");
+}
 
     const user = new User({
       fullName: role !== "organization" ? fullName : undefined,
       organizationName: role === "organization" ? organizationName : undefined,
-      email, password, location,
+      email,
+      password,
+      location,
       mobileNumber: role === "communityAdmin" ? mobileNumber : undefined,
       socialMediaLink: role === "organization" ? socialMediaLink : undefined,
       role,
       verificationDoc,
+      verificationToken: token,
+      isVerified: false,
     });
-    console.log("This is user",user);
+
     await user.save();
 
+    // Citizen: email verification required before login
     if (user.role === "citizen") {
-  req.session.userId = user._id;
-  req.session.role = user.role;
-  req.session.fullName = user.fullName;
+      sendEmail({
+        to: user.email,
+        subject: "Verify Your Email - Local Connect",
+        text: `Hi ${user.fullName || "User"},
 
-  return res.redirect("/");
-}
-    // for organization and community admin
-    return res.send("Your registration is pending . You will be able to login after approval.");
+Please verify your email by clicking the link below:
+
+http://localhost:3000/verify/${token}
+
+You must verify your email before logging in.
+
+Thank you,
+Local Connect`,
+      });
+
+      req.flash("info", "Please check your email and verify your account before logging in.");
+      return res.redirect("/login");
+    }
+
+    // Organization / Community Admin: verify email first, then wait for admin review
+sendEmail({
+  to: user.email,
+  subject: "Registration Received - Local Connect",
+  text: `Hi ${user.organizationName || user.fullName || "User"},
+
+Your registration has been received and is currently under review.
+
+You will be notified once your account is approved.
+
+Thank you for using Local Connect.`,
+});
+
+    req.flash("info", "Your registration is under review. You will be notified once approved.");
+    return res.redirect("/login");
   } catch (err) {
     console.log(err);
-    res.send("Error registering user");
+    req.flash("error", "Error registering user");
+    return res.redirect("/register");
   }
 };
 
 // GET login page
 exports.getLogin = (req, res) => {
-  res.render("auth/login", { title: "Login",hideSidebar: true });
+  res.render("auth/login", {
+    title: "Login",
+    hideSidebar: true,
+  });
 };
 
 // POST login
@@ -94,62 +161,111 @@ exports.postLogin = async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    return res.send("All fields are required");
+    req.flash("error", "All fields are required");
+    return res.redirect("/login");
   }
 
   try {
     const user = await User.findOne({ email });
 
+    // 1. Check user exists FIRST
     if (!user) {
-      return res.send("Invalid email or password");
+      req.flash("error", "Invalid email or password");
+      return res.redirect("/login");
     }
-
+    // 3. Rejected user
     if (user.status === "rejected") {
-      return res.send(`Your registration was rejected: ${user.rejectionReason}`);
+      req.flash("error", `Your registration was rejected: ${user.rejectionReason}`);
+      return res.redirect("/login");
     }
 
-    if (!user.isApproved) {
-      return res.send("Your account is pending ");
+        // 4. Organization approval check
+    if (
+      (user.role === "organization" || user.role === "communityAdmin") &&
+      !user.isApproved
+    ) {
+      req.flash("info", "Your account is under review. You will be notified once approved.");
+      return res.redirect("/login");
+    }
+    // 2. Email verification check
+    if (!user.isVerified) {
+      req.flash("info", "Please verify your email before logging in.");
+      return res.redirect("/login");
     }
 
+    // 5. Password check
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
-      return res.send("Invalid email or password");
+      req.flash("error", "Invalid email or password");
+      return res.redirect("/login");
     }
 
-req.session.userId = user._id;
-req.session.role = user.role;
-req.session.fullName = user.fullName;
-req.session.organizationName = user.organizationName;
+    // 6. Session
+    req.session.userId = user._id;
+    req.session.role = user.role;
+    req.session.fullName = user.fullName;
+    req.session.organizationName = user.organizationName;
+    req.session.profileCompleted = user.profileCompleted;
 
-// system admin goes to admin dashboard
-if (user.role === "systemAdmin") {
-  return res.redirect("/admin");
-}
+    // 7. Admin redirect
+    if (user.role === "systemAdmin") {
+      req.flash("success", "Welcome back, Admin!");
+      return res.redirect("/admin");
+    }
 
-// force profile setup for org/community admin (first login only)
-if (
-  (user.role === "organization" || user.role === "communityAdmin") &&
-  !user.profileCompleted
-) {
-  return res.redirect("/profile/edit");
-}
+    // 8. Profile completion check
+    if (
+      (user.role === "organization" || user.role === "communityAdmin") &&
+      !user.profileCompleted
+    ) {
+      req.flash("info", "Please complete your profile setup first.");
+      return res.redirect("/profile/edit");
+    }
 
-// everyone else
-return res.redirect("/");
+    // 9. Success
+    req.flash("success", "Welcome back!");
+    return res.redirect("/");
+
   } catch (err) {
     console.log(err);
-    return res.send("Error logging in");
+    req.flash("error", "Error logging in");
+    return res.redirect("/login");
   }
 };
 
+
+// LOGOUT
 exports.logout = (req, res) => {
   req.session.destroy((err) => {
     if (err) {
-      return res.send("Error logging out");
+      req.flash("error", "Error logging out");
+      return res.redirect("/");
     }
 
+    res.clearCookie("connect.sid");
     return res.redirect("/");
   });
+};
+
+exports.verifyEmail = async (req, res) => {
+  try {
+    const user = await User.findOne({ verificationToken: req.params.token });
+
+    if (!user) {
+      req.flash("error", "Invalid or expired verification link");
+      return res.redirect("/login");
+    }
+
+    user.isVerified = true;
+    user.verificationToken = "";
+    await user.save();
+
+    req.flash("success", "Email verified successfully. You can now log in.");
+    return res.redirect("/login");
+  } catch (err) {
+    console.log(err);
+    req.flash("error", "Error verifying email");
+    return res.redirect("/login");
+  }
 };

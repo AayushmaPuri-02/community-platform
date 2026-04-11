@@ -1,154 +1,229 @@
+<style>
+  body { background-color: #f4f7f6; }
+
+  .card-profile {
+    border-radius: 18px;
+    border: none;
+  }
+
+  .post-link {
+    color: #04888D;
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .post-link:hover {
+    text-decoration: underline;
+  }
+
+  .badge-tag {
+    background-color: #e0f2f1;
+    color: #04888D;
+    font-weight: 500;
+  }
+
+.hero-banner {
+  height: 220px;
+  border-radius: 18px 18px 0 0;
+  background-image: linear-gradient(rgba(223, 244, 242, 0.72), rgba(243, 253, 252, 0.72)), url("<%= user.profileImage || '/images/default-avatar.png' %>");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+  .profile-avatar {
+    width: 130px;
+    height: 130px;
+    object-fit: cover;
+    border: 4px solid white;
+    margin-top: -65px;
+    background: white;
+  }
+
+  .info-label {
+    font-size: 0.8rem;
+    color: #6c757d;
+    display: block;
+    margin-bottom: 4px;
+  }
+</style>
+
 <div class="container py-4">
-<% if (backUrl) { %>
-  <p>
-    <a href="<%= backUrl %>" class="btn btn-outline-secondary btn-sm">← Back</a>
-  </p>
-<% } %>
-  <div class="row">
-    <!-- Main Profile Content -->
-    <div class="col-lg-8">
+  <% if (backUrl) { %>
+    <p>
+      <a href="<%= backUrl %>" class="btn btn-outline-secondary btn-sm">← Back</a>
+    </p>
+  <% } %>
 
-      <div class="text-center mb-4">
-        <% if (user.profileImage) { %>
-          <img
-            src="<%= user.profileImage %>"
-            alt="Profile Image"
-            style="width:160px; height:160px; border-radius:50%; object-fit:cover;"
-            class="mb-3 shadow-sm"
-          >
-        <% } %>
+  <% if (user.role === "citizen") { %>
+    <!-- CITIZEN PROFILE -->
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <div class="card card-profile shadow-sm overflow-hidden">
+          <div class="hero-banner"></div>
 
-        <h2 class="fw-bold mb-1"><%= user.organizationName || user.fullName %></h2>
+          <div class="card-body text-center px-4 pb-5">
+            <img
+              src="<%= user.profileImage || '/images/default-avatar.png' %>"
+              alt="Profile Image"
+              class="rounded-circle shadow-sm profile-avatar"
+            >
 
-        <% if (user.location) { %>
-          <p class="text-muted mb-3"><%= user.location %></p>
-        <% } %>
+            <h2 class="fw-bold mt-3 mb-1"><%= user.fullName %></h2>
 
-        <% if (userId && userId.toString() === user._id.toString()) { %>
-          <a href="/profile/edit" class="btn btn-primary">Edit Profile</a>
-        <% } %>
-
-<% if (
-  userId &&
-  userId.toString() !== user._id.toString() &&
-  role !== "systemAdmin" &&
-  (user.role === "organization" || user.role === "communityAdmin")
-) { %>
-
-  <form action="/follow/<%= user._id %>/toggle" method="POST" style="margin-top:10px;">
-    <button class="btn btn-dark">
-      <%= isFollowing ? "Following" : "Follow" %>
-    </button>
-  </form>
-
-<% } %>
-
-      </div>
-
-      <div class="card mb-4 shadow-sm">
-        <div class="card-body">
-          <h5 class="fw-bold mb-3">About</h5>
-
-          <% if (user.bio) { %>
-            <p class="mb-3"><%= user.bio %></p>
-          <% } else { %>
-            <p class="text-muted">No bio added yet.</p>
-          <% } %>
-
-          <% if (user.contactInfo) { %>
-            <p><strong>Contact:</strong> <%= user.contactInfo %></p>
-          <% } %>
-
-          <% if (user.socialMediaLink) { %>
-            <p>
-              <strong>Social:</strong>
-              <a href="<%= user.socialMediaLink %>" target="_blank">Visit</a>
+            <p class="text-muted mb-2">
+              <i class="bi bi-geo-alt me-1"></i>
+              <%= user.location || 'No location added' %>
             </p>
-          <% } %>
-        </div>
-      </div>
 
-      <h4 class="fw-bold mb-3">Posts</h4>
+            <p class="text-muted small mb-2">
+  Joined <%= user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A" %>
+</p>
 
-      <% if (posts.length === 0) { %>
-        <p class="text-muted">No posts yet.</p>
-      <% } %>
+<p class="text-muted small mb-4">
+  Following <strong><%= followingCount %></strong> organization/community account<%= followingCount === 1 ? '' : 's' %>
+</p>
 
-      <% posts.forEach(post => { %>
-        <div class="card mb-4 shadow-sm border-0 rounded-3">
-          <div class="card-body">
+            <div class="d-flex justify-content-center gap-2 flex-wrap">
+              <% if (userId && userId.toString() === user._id.toString()) { %>
+                <a href="/profile/edit" class="btn btn-outline-secondary btn-sm px-4">Edit Profile</a>
+              <% } %>
 
-            <div class="d-flex justify-content-between align-items-start mb-2">
-              <h5 class="fw-semibold mb-0">
-                <a href="/posts/<%= post._id %>?from=profile&userId=<%= user._id %>" class="text-decoration-none" style="color:#04888D;">
-                  <%= post.title %>
-                </a>
-              </h5>
-
-              <small class="text-muted">
-                <%= post.createdAt.toLocaleDateString() %>
-              </small>
-            </div>
-
-            <p class="text-muted mb-3"><%= post.description %></p>
-
-            <div class="mb-3">
-              <% if (post.tags && post.tags.length > 0) { %>
-                <% post.tags.forEach(tag => { %>
-                  <span class="badge bg-light text-primary me-1">#<%= tag %></span>
-                <% }) %>
-              <% } else { %>
-                <span class="text-muted small">No tags</span>
+              <% if (userId && userId.toString() !== user._id.toString() && role !== "systemAdmin") { %>
+                <a href="/messages/<%= user._id %>" class="btn btn-primary btn-sm px-4">Message</a>
               <% } %>
             </div>
-
-            <div class="d-flex justify-content-between align-items-center">
-              <div class="text-muted small">
-                <a href="/posts/<%= post._id %>?from=profile&userId=<%= user._id %>" class="text-decoration-none text-muted">
-                  <i class="bi bi-chat-dots me-1"></i> View Post
-                </a>
-              </div>
-
-              <div class="small text-danger">
-                Posted by <%= user.organizationName || user.fullName %>
-              </div>
-            </div>
-
           </div>
-        </div>
-      <% }) %>
-
-    </div>
-
-    <!-- Right Side Info Panel -->
-    <div class="col-lg-4">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <h5 class="fw-bold mb-3">Organization Info</h5>
-
-          <p><strong>Name:</strong> <%= user.organizationName || user.fullName %></p>
-
-          <% if (user.location) { %>
-            <p><strong>Location:</strong> <%= user.location %></p>
-          <% } %>
-
-          <% if (user.contactInfo) { %>
-            <p><strong>Contact:</strong> <%= user.contactInfo %></p>
-          <% } %>
-
-          <% if (user.socialMediaLink) { %>
-            <p>
-              <strong>Social:</strong>
-              <a href="<%= user.socialMediaLink %>" target="_blank">Visit Link</a>
-            </p>
-          <% } %>
-
-          <% if (!(userId && userId.toString() === user._id.toString())) { %>
-            <button class="btn btn-outline-dark w-100 mt-2" disabled>Message</button>
-          <% } %>
         </div>
       </div>
     </div>
-  </div>
 
+  <% } else { %>
+    <!-- ORGANIZATION / COMMUNITY PROFILE -->
+    <div class="row g-4">
+      <!-- CENTER CONTENT -->
+      <div class="col-md-9 col-lg-8">
+        <div class="card card-profile shadow-sm overflow-hidden mb-4">
+          <div class="hero-banner"></div>
+
+          <div class="card-body text-center px-4 pb-5">
+            <img
+              src="<%= user.profileImage || '/images/default-avatar.png' %>"
+              alt="Profile Image"
+              class="rounded-circle shadow-sm profile-avatar"
+            >
+
+            <h2 class="fw-bold mt-3 mb-1"><%= user.organizationName || user.fullName %></h2>
+
+            <p class="text-muted mb-2">
+  <i class="bi bi-geo-alt me-1"></i>
+  <%= user.location || 'No location added' %>
+</p>
+
+
+
+            <div class="d-flex justify-content-center gap-2 flex-wrap">
+              <% if (userId && userId.toString() === user._id.toString()) { %>
+    <a href="/profile/edit" class="btn btn-primary px-4 shadow-sm">
+      <i class="bi bi-pencil me-1"></i> Edit Profile
+    </a>
+  <% } %>
+
+              <% if (
+                userId &&
+                userId.toString() !== user._id.toString() &&
+                role !== "systemAdmin" &&
+                (user.role === "organization" || user.role === "communityAdmin")
+              ) { %>
+<form action="/follow/<%= user._id %>/toggle" method="POST" class="d-inline">
+  <button class="btn btn-sm px-4 <%= isFollowing ? 'btn-primary' : 'btn-outline-primary' %>">
+    <%= isFollowing ? "Following" : "Follow" %>
+  </button>
+</form>
+              <% } %>
+
+                <% if (userId && userId.toString() !== user._id.toString() && role !== "systemAdmin") { %>
+    <a href="/messages/<%= user._id %>" class="btn btn-outline-primary px-4">
+      Message
+    </a>
+  <% } %>
+            </div>
+          </div>
+        </div>
+
+        <h5 class="fw-bold mb-3">Posts</h5>
+
+        <% if (posts.length === 0) { %>
+          <div class="p-5 text-center bg-white rounded-4 border-0 shadow-sm">
+            <p class="text-muted mb-0">Nothing posted yet.</p>
+          </div>
+        <% } %>
+
+        <% posts.forEach(post => { %>
+          <div class="card card-profile shadow-sm mb-3 border-0">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start gap-3">
+                <a href="/posts/<%= post._id %>" class="post-link fs-5"><%= post.title %></a>
+                <small class="text-muted"><%= post.createdAt.toLocaleDateString() %></small>
+              </div>
+
+              <p class="mt-2 text-secondary"><%= post.description %></p>
+
+              <% if (post.tags && post.tags.length > 0) { %>
+                <div>
+                  <% post.tags.forEach(tag => { %>
+                    <span class="badge badge-tag me-1">#<%= tag %></span>
+                  <% }) %>
+                </div>
+              <% } %>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+
+      <!-- RIGHT SIDEBAR -->
+      <div class="col-lg-4">
+        <div class="card card-profile shadow-sm border-0">
+          <div class="card-body">
+            <h6 class="fw-bold mb-3 text-muted">Organization Information</h6>
+
+            <div class="mb-3">
+              <span class="info-label">About</span>
+              <p class="small mb-0"><%= user.bio || 'No bio provided.' %></p>
+            </div>
+
+            <div class="mb-3">
+              <span class="info-label">Contact</span>
+              <p class="small mb-1"><%= user.contactInfo || 'N/A' %></p>
+            </div>
+
+            <% if (user.socialMediaLink) { %>
+              <div class="mb-3">
+                <span class="info-label">Website / Social</span>
+                <a href="<%= user.socialMediaLink %>" target="_blank" class="small text-decoration-none">
+                  Visit Link
+                </a>
+              </div>
+            <% } %>
+
+            <hr>
+
+<div class="mb-3">
+  <span class="info-label">Followers</span>
+  <p class="small mb-0"><%= followerCount %></p>
+</div>
+
+<div class="mb-3">
+  <span class="info-label">Following</span>
+  <p class="small mb-0"><%= followingCount %></p>
+</div>
+
+<p class="text-muted small mb-0">
+  Joined <%= user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A" %>
+</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% } %>
 </div>

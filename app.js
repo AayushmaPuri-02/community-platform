@@ -18,7 +18,10 @@ const userRoutes = require("./routes/userRoutes");
 const followRoutes = require("./routes/followRoutes");
 const followingRoutes = require("./routes/followingRoutes");
 const Follow = require("./models/Follow");
-
+const flash = require("connect-flash");
+const { ensureProfileComplete } = require("./middleware/authMiddleware");
+const messageRoutes = require("./routes/messageRoutes");
+const Message = require("./models/Message");
 
 
 const app = express();
@@ -46,21 +49,80 @@ app.use(
   })
 );
 
+app.use(flash());
+
 app.use((req, res, next) => {
   res.locals.userId = req.session.userId || null;
   res.locals.role = req.session.role || null;
   res.locals.fullName = req.session.fullName || null;
   res.locals.organizationName = req.session.organizationName || null;
+  res.locals.currentPath = req.path;
   next();
 });
 
+app.use((req, res, next) => {
+  res.locals.success = req.flash("success");
+  res.locals.error = req.flash("error");
+  res.locals.info = req.flash("info");
+  next();
+});
+
+//messaging
+app.use(async (req, res, next) => {
+  try {
+    if (req.session.userId) {
+      const unreadMessages = await Message.find({
+        receiver: req.session.userId,
+        isRead: false
+      }).select("sender");
+
+      const uniqueSenders = new Set(
+        unreadMessages.map(msg => msg.sender.toString())
+      );
+
+      res.locals.unreadCount = uniqueSenders.size;
+    } else {
+      res.locals.unreadCount = 0;
+    }
+
+    next();
+  } catch (err) {
+    console.log(err);
+    res.locals.unreadCount = 0;
+    next();
+  }
+});
 // View engine
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.set("layout", "layouts/main");
 
 // Routes
-app.get("/", async (req, res) => {
+
+app.get("/", (req, res) => {
+  if (req.session.userId) {
+    if (req.session.role === "systemAdmin") {
+      return res.redirect("/admin");
+    }
+
+    if (
+      (req.session.role === "organization" || req.session.role === "communityAdmin") &&
+      !req.session.profileCompleted
+    ) {
+      return res.redirect("/profile/edit");
+    }
+
+    return res.redirect("/home");
+  }
+
+  return res.render("landing", {
+    title: "Local Connect",
+    hideSidebar: true,
+  });
+});
+
+
+app.get("/home", ensureProfileComplete, async (req, res) => {
   try {
     let followedUserIds = [];
 
@@ -95,9 +157,11 @@ app.get("/", async (req, res) => {
       post.commentCount = count;
     }
 
+    const currentUser = req.session.userId ? await User.findById(req.session.userId) : null;
     res.render("auth/index", {
       title: "Home",
       posts,
+      userSavedPosts: currentUser ? currentUser.savedPosts : []
     });
   } catch (err) {
     console.log(err);
@@ -108,27 +172,72 @@ app.use("/", authRoutes);
 app.use("/", postRoutes);
 app.use("/admin", adminRoutes);
 app.use("/profile", profileRoutes);
-app.use("/users", userRoutes);
+app.use("/users", ensureProfileComplete,userRoutes);
 app.use("/follow", followRoutes);
-app.use("/following", followingRoutes);
+app.use("/following",ensureProfileComplete, followingRoutes);
+app.use("/messages", messageRoutes);
 
 
 //explore page
-app.get("/explore", async (req, res) => {
+app.get("/explore", ensureProfileComplete, async (req, res) => {
   try {
+    const currentUserId = req.session.userId;
+
     const profiles = await User.find({
       status: "approved",
       role: { $in: ["organization", "communityAdmin"] },
-      _id: { $ne: req.session.userId } // EXCLUDE SELF
+      _id: { $ne: currentUserId }
     }).sort({ createdAt: -1 });
 
+    const followedRecords = currentUserId
+      ? await Follow.find({ follower: currentUserId }).select("following")
+      : [];
+
+    const followedIds = new Set(followedRecords.map(f => f.following.toString()));
+
+    const profileIds = profiles.map(profile => profile._id);
+
+    const followerCounts = await Follow.aggregate([
+      { $match: { following: { $in: profileIds } } },
+      { $group: { _id: "$following", count: { $sum: 1 } } }
+    ]);
+
+    const followerCountMap = {};
+    followerCounts.forEach(item => {
+      followerCountMap[item._id.toString()] = item.count;
+    });
+
+    const profilesWithMeta = profiles.map(profile => ({
+      ...profile.toObject(),
+      isFollowing: followedIds.has(profile._id.toString()),
+      followerCount: followerCountMap[profile._id.toString()] || 0
+    }));
+
     res.render("explore/index", {
-      title: "Explore",
-      profiles,
+      title: "Explore Communities & Organizations",
+      profiles: profilesWithMeta,
     });
   } catch (err) {
     console.log(err);
     res.send("Error loading explore page");
+  }
+});
+
+//saved page
+app.get("/saved", isLoggedIn, ensureProfileComplete, async (req, res) => {
+  try {
+    const user = await User.findById(req.session.userId).populate({
+      path: "savedPosts",
+      populate: { path: "author" }
+    });
+
+    res.render("saved/index", {
+      title: "Saved Posts",
+      savedPosts: user ? user.savedPosts : []
+    });
+  } catch (err) {
+    console.log(err);
+    res.send("Error loading saved posts");
   }
 });
 

@@ -1,0 +1,42 @@
+<h4 class="mb-3">View verified communities and citizens</h4>
+
+<div class="mb-3">
+  <a href="/admin/directory?type=organization" class="filter-chip <%= selected === 'organization' ? 'active' : '' %>">
+    Organizations (<%= organizationCount %>)
+  </a>
+
+  <a href="/admin/directory?type=communityAdmin" class="filter-chip <%= selected === 'communityAdmin' ? 'active' : '' %>">
+    Community Admins (<%= communityAdminCount %>)
+  </a>
+
+  <a href="/admin/directory?type=citizen" class="filter-chip <%= selected === 'citizen' ? 'active' : '' %>">
+    Citizens (<%= citizenCount %>)
+  </a>
+</div>
+
+<% if (directoryUsers.length === 0) { %>
+  <p class="text-muted">No users found in this category.</p>
+<% } %>
+
+<% directoryUsers.forEach(user => { %>
+  <div class="directory-card d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div>
+      <div class="fw-bold mb-1"><%= user.organizationName || user.fullName %></div>
+      <div class="small text-muted mb-1"><%= user.email %></div>
+      <div class="small text-muted">
+        <%= user.location || "No location" %>
+        • Joined
+        <%= new Date(user.createdAt).toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "short",
+          year: "numeric"
+        }) %>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a href="/admin/directory/<%= user._id %>" class="btn btn-outline-primary btn-sm">View</a>
+      <button class="btn btn-outline-danger btn-sm" disabled>Disable</button>
+    </div>
+  </div>
+<% }) %>

@@ -1,17 +1,61 @@
-<h2>System Admin Dashboard</h2>
+<h3 class="mb-4">Welcome, Admin</h3>
 
-<div style="display:flex; gap:20px;">
-
-  <div style="width:220px; border:1px solid black; padding:15px;">
-    <p><a href="/admin">Home</a></p>
-    <p><a href="/admin/requests">Verification Requests</a></p>
-    <p><a href="#">Settings</a></p>
-    <p><a href="/logout">Logout</a></p>
+<div class="row g-3 mb-4">
+  <div class="col-md-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-label">Pending Organization Requests</div>
+      <div class="stat-value"><%= pendingOrgRequests %></div>
+    </div>
   </div>
 
-  <div style="flex:1; border:1px solid black; padding:15px;">
-    <h3>Welcome, Admin</h3>
-    <p>Use the sidebar to manage verification requests.</p>
+  <div class="col-md-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-label">Pending Community Requests</div>
+      <div class="stat-value"><%= pendingCommunityRequests %></div>
+    </div>
   </div>
 
+  <div class="col-md-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-label">Total Organizations</div>
+      <div class="stat-value"><%= totalOrganizations %></div>
+    </div>
+  </div>
+
+  <div class="col-md-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-label">Total Citizens</div>
+      <div class="stat-value"><%= totalCitizens %></div>
+    </div>
+  </div>
+</div>
+
+<div class="mb-4">
+  <h5 class="mb-3">Request Status Overview</h5>
+  <div>
+    <span class="status-chip chip-approved">Approved: <%= approvedCount %></span>
+    <span class="status-chip chip-pending">Pending: <%= pendingCount %></span>
+    <span class="status-chip chip-rejected">Rejected: <%= rejectedCount %></span>
+  </div>
+</div>
+
+<div>
+  <h5 class="mb-3">Recent Activity</h5>
+
+  <% if (recentActivities.length === 0) { %>
+    <p class="text-muted mb-0">No recent activity yet.</p>
+  <% } %>
+
+  <% recentActivities.forEach(activity => { %>
+    <div class="activity-card d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div><%= activity.text %></div>
+      <small class="text-muted">
+        <%= new Date(activity.date).toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "short",
+          year: "numeric"
+        }) %>
+      </small>
+    </div>
+  <% }) %>
 </div>

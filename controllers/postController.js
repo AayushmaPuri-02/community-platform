@@ -1,4 +1,5 @@
-const Post = require("../models/Post");
+const crypto = require("crypto");
+const User = require("../models/User");const Post = require("../models/Post");
 const Comment = require("../models/Comment");
 
 exports.getCreatePost = (req, res) => {
@@ -6,24 +7,33 @@ exports.getCreatePost = (req, res) => {
 };
 
 exports.createPost = async (req, res) => {
-  const { title, description, type, tags } = req.body;
-
   try {
+    const { title, description, type, tags } = req.body;
+
     const post = new Post({
       title,
       description,
       type,
-      tags: tags ? tags.split(",").map(tag => tag.trim()) : [],
+      tags: tags ? tags.split(",").map(t => t.trim()) : [],
       author: req.session.userId,
     });
 
-    await post.save();
+    // 🔥 ADD THIS BLOCK
+if (req.files && req.files.length > 0) {
+  post.images = req.files.map(file => ({
+    url: file.path,
+    filename: file.filename,
+  }));
+}
 
-    res.redirect("/");
-  } catch (err) {
-    console.log(err);
-    res.send("Error creating post");
-  }
+    await post.save();
+    req.flash("success", "Post created successfully");
+    return res.redirect(`/posts/${post._id}`);
+ } catch (err) {
+  console.log(err);
+  req.flash("error", "Error creating post");
+  return res.redirect("/posts/create");
+}
 };
 
 exports.getPostById = async (req, res) => {
@@ -43,10 +53,12 @@ exports.getPostById = async (req, res) => {
       return res.send("Post not found");
     }
 
+    const currentUser = await User.findById(req.session.userId);
     res.render("posts/show", {
       title: post.title,
       post,
       comments, 
+      userSavedPosts: currentUser ? currentUser.savedPosts : [],
       backUrl,  //this is added after the comment model is added
     });
   } catch (err) {
@@ -59,20 +71,36 @@ exports.createComment = async (req, res) => {
   const { text } = req.body;
 
   try {
+    const trimmedText = text ? text.trim() : "";
+
+    if (!trimmedText) {
+      req.flash("error", "Comment cannot be empty");
+      return res.redirect(`/posts/${req.params.id}`);
+    }
+
+    const wordCount = trimmedText.split(/\s+/).filter(Boolean).length;
+
+    if (wordCount > 100) {
+      req.flash("error", "Comment must not exceed 100 words");
+      return res.redirect(`/posts/${req.params.id}`);
+    }
+
     const comment = new Comment({
-      text,
+      text: trimmedText,
       post: req.params.id,
       author: req.session.userId,
     });
 
     await comment.save();
-
-    res.redirect(`/posts/${req.params.id}`);
+    req.flash("success", "Comment added successfully");
+    return res.redirect(`/posts/${req.params.id}`);
   } catch (err) {
     console.log(err);
-    res.send("Error adding comment");
+    req.flash("error", "Error adding comment");
+    return res.redirect(`/posts/${req.params.id}`);
   }
 };
+
 
 exports.deleteComment = async (req, res) => {
   try {
@@ -92,11 +120,13 @@ exports.deleteComment = async (req, res) => {
 
     await Comment.findByIdAndDelete(req.params.id);
 
+    req.flash("success", "Comment deleted successfully");
     return res.redirect(`/posts/${comment.post._id || comment.post}`);
   } catch (err) {
-    console.log(err);
-    return res.send("Error deleting comment");
-  }
+  console.log(err);
+  req.flash("error", "Error deleting comment");
+  return res.redirect("/home");
+}
 };
 exports.getEditComment = async (req, res) => {
   try {
@@ -131,18 +161,33 @@ exports.updateComment = async (req, res) => {
       return res.send("Comment not found");
     }
 
-    // only author can update
     if (comment.author.toString() !== req.session.userId) {
       return res.send("Unauthorized");
     }
 
-    comment.text = text;
+    const trimmedText = text ? text.trim() : "";
+
+    if (!trimmedText) {
+      req.flash("error", "Comment cannot be empty");
+      return res.redirect(`/posts/${comment.post}`);
+    }
+
+    const wordCount = trimmedText.split(/\s+/).filter(Boolean).length;
+
+    if (wordCount > 100) {
+      req.flash("error", "Comment must not exceed 100 words");
+      return res.redirect(`/posts/${comment.post}`);
+    }
+
+    comment.text = trimmedText;
     await comment.save();
 
-    res.redirect(`/posts/${comment.post}`);
+    req.flash("success", "Comment updated successfully");
+    return res.redirect(`/posts/${comment.post}`);
   } catch (err) {
     console.log(err);
-    res.send("Error updating comment");
+    req.flash("error", "Error updating comment");
+    return res.redirect("/home");
   }
 };
 
@@ -160,12 +205,13 @@ exports.deletePost = async (req, res) => {
     }
 
     await Post.findByIdAndDelete(req.params.id);
-
-    res.redirect("/");
-  } catch (err) {
-    console.log(err);
-    res.send("Error deleting post");
-  }
+   req.flash("success", "Post deleted successfully");
+return res.redirect("/home");
+} catch (err) {
+  console.log(err);
+  req.flash("error", "Error deleting post");
+  return res.redirect("/");
+}
 };
 
 exports.getEditPost = async (req, res) => {
@@ -209,11 +255,20 @@ exports.updatePost = async (req, res) => {
     post.type = type;
     post.tags = tags ? tags.split(",").map(tag => tag.trim()) : [];
 
+    if (req.files && req.files.length > 0) {
+      post.images = req.files.map(file => ({
+        url: file.path,
+        filename: file.filename,
+      }));
+    }
+
     await post.save();
 
-    res.redirect(`/posts/${post._id}`);
+    req.flash("success", "Post updated successfully");
+    return res.redirect(`/posts/${post._id}`);
   } catch (err) {
     console.log(err);
-    res.send("Error updating post");
+    req.flash("error", "Error updating post");
+    return res.redirect("/");
   }
 };

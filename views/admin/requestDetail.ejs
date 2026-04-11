@@ -2,68 +2,102 @@
   <a href="/admin/requests" class="btn btn-outline-secondary btn-sm">← Back to Requests</a>
 </p>
 
-<h2>Request Detail</h2>
+<div class="detail-card">
+  <div class="detail-row">
+    <span class="detail-label">Name</span>
+    <div><%= user.organizationName || user.fullName %></div>
+  </div>
 
-<div style="border:1px solid black; padding:15px;">
+  <div class="detail-row">
+    <span class="detail-label">Email</span>
+    <div><%= user.email %></div>
+  </div>
 
-  <p><strong>Name:</strong> <%= user.organizationName || user.fullName %></p>
+  <div class="detail-row">
+    <span class="detail-label">Role</span>
+    <div class="text-capitalize"><%= user.role %></div>
+  </div>
 
-  <p><strong>Email:</strong> <%= user.email %></p>
-
-  <p><strong>Role:</strong> <%= user.role %></p>
-
-  <p><strong>Location:</strong> <%= user.location %></p>
+  <div class="detail-row">
+    <span class="detail-label">Location</span>
+    <div><%= user.location || "N/A" %></div>
+  </div>
 
   <% if (user.mobileNumber) { %>
-    <p><strong>Mobile:</strong> <%= user.mobileNumber %></p>
+    <div class="detail-row">
+      <span class="detail-label">Mobile</span>
+      <div><%= user.mobileNumber %></div>
+    </div>
   <% } %>
 
   <% if (user.socialMediaLink) { %>
-    <p><strong>Social:</strong> <%= user.socialMediaLink %></p>
+    <div class="detail-row">
+      <span class="detail-label">Social</span>
+      <a href="<%= user.socialMediaLink %>" target="_blank"><%= user.socialMediaLink %></a>
+    </div>
   <% } %>
 
-  <p><strong>Requested At:</strong> <%= user.createdAt.toLocaleString() %></p>
-
-  <hr>
-
-<p><strong>Verification Document:</strong></p>
-
-<% if (user.verificationDoc) { %>
-  <h5>Verification Document</h5>
-
-  <div style="border:1px solid #ccc; border-radius:8px; overflow:hidden; max-width:900px; background:#fff;">
-    
-    <% if (user.verificationDoc.includes(".pdf")) { %>
-      <iframe 
-        src="<%= user.verificationDoc %>#toolbar=0&navpanes=0&scrollbar=0&view=FitH"
-        style="width:100%; height:600px; border:none;">
-      </iframe>
-    <% } else { %>
-      <img 
-        src="<%= user.verificationDoc %>" 
-        alt="Verification Document"
-        class="img-fluid"
-        style="width:100%; max-height:500px; object-fit: contain; display:block;">
-    <% } %>
-
+  <div class="detail-row">
+    <span class="detail-label">Requested At</span>
+    <div>
+      <%= user.createdAt.toLocaleString("en-GB", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true
+      }) %>
+    </div>
   </div>
 
-  <br>
+  <hr class="my-4">
 
-  <a href="<%= user.verificationDoc %>" target="_blank">
-    Open in new tab
-  </a>
-<% } %>
+  <h5 class="mb-3">Verification Document</h5>
 
-  <hr>
+  <% if (user.verificationDoc) { %>
+    <% const docUrl = user.verificationDoc.toLowerCase(); %>
+    <% const isPdf = docUrl.includes(".pdf") || docUrl.includes("/raw/upload/"); %>
 
-<form action="/admin/requests/<%= user._id %>/approve" method="POST" style="display:inline;">
-  <button type="submit">Approve</button>
-</form>
+    <div style="border:1px solid #ddd; border-radius:14px; overflow:hidden; background:#fff; padding:12px;" class="mb-3">
+      <% if (isPdf) { %>
+        <iframe
+          src="<%= user.verificationDoc %>#toolbar=0&navpanes=0&scrollbar=0"
+          style="width:100%; height:600px; border:none;">
+        </iframe>
+      <% } else { %>
+        <img
+          src="<%= user.verificationDoc %>"
+          alt="Verification Document"
+          class="img-fluid"
+          style="width:100%; max-height:500px; object-fit:contain; display:block; margin:auto;">
+      <% } %>
+    </div>
 
-<form action="/admin/requests/<%= user._id %>/reject" method="POST" style="display:inline; margin-left:10px;">
-  <input type="text" name="rejectionReason" placeholder="Reason for rejection" required>
-  <button type="submit">Reject</button>
-</form>
+    <a href="<%= user.verificationDoc %>" target="_blank" class="btn btn-outline-dark btn-sm">
+      Open in New Tab
+    </a>
+  <% } else { %>
+    <p class="text-muted">No verification document uploaded.</p>
+  <% } %>
 
+  <hr class="my-4">
+
+  <div class="d-flex flex-wrap gap-3 align-items-center">
+    <form action="/admin/requests/<%= user._id %>/approve" method="POST" class="m-0">
+      <button type="submit" class="btn btn-success px-4">Approve</button>
+    </form>
+
+    <form action="/admin/requests/<%= user._id %>/reject" method="POST" class="m-0 d-flex gap-2 flex-wrap">
+      <input
+        type="text"
+        name="rejectionReason"
+        class="form-control"
+        placeholder="Reason for rejection"
+        style="min-width:280px;"
+        required
+      >
+      <button type="submit" class="btn btn-danger px-4">Reject</button>
+    </form>
+  </div>
 </div>

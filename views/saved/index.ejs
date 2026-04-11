@@ -1,0 +1,46 @@
+<h2 class="mb-4">Saved Posts</h2>
+
+<% if (savedPosts.length === 0) { %>
+  <p class="text-muted">No saved posts yet.</p>
+<% } %>
+
+<% savedPosts.forEach(post => { %>
+  <div class="card mb-4 border-1 shadow-sm rounded-3">
+    <div class="card-body p-4">
+
+      <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+        <h5 class="fw-bold mb-0">
+          <a href="/posts/<%= post._id %>" class="text-decoration-none" style="color: #04888D;">
+            <%= post.title %>
+          </a>
+        </h5>
+        <small class="text-muted fw-light">
+          <%= post.createdAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) %>
+        </small>
+      </div>
+
+      <% if (post.postImage && post.postImage.url) { %>
+        <div class="mb-3">
+          <a href="/posts/<%= post._id %>">
+            <img 
+              src="<%= post.postImage.url %>" 
+              class="w-100 rounded"
+              style="max-height: 400px; object-fit: contain;">
+          </a>
+        </div>
+      <% } %>
+
+      <p class="text-secondary mb-3" style="line-height: 1.6; font-size: 0.95rem;">
+        <%= post.description %>
+      </p>
+
+      <div class="small">
+        <span class="text-muted">Posted by</span>
+        <span class="fw-bold text-danger ms-1">
+          <%= post.author ? (post.author.organizationName || post.author.fullName) : "Unknown" %>
+        </span>
+      </div>
+
+    </div>
+  </div>
+<% }) %>

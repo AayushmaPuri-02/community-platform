@@ -1,32 +1,26 @@
-<p>
-  <a href="/admin" class="btn btn-outline-secondary btn-sm">← Back to Admin Dashboard</a>
-</p>
-
-<h2>Pending Verification Requests</h2>
+<h4 class="mb-4">Pending Verification Requests</h4>
 
 <% if (pendingUsers.length === 0) { %>
-  <p>No pending requests.</p>
+  <p class="text-muted">No pending requests.</p>
 <% } %>
 
 <% pendingUsers.forEach(user => { %>
-  <div style="border:1px solid black; padding:10px; margin-bottom:10px;">
-    
-    <p>
-      <strong>Name:</strong>
-      <%= user.organizationName || user.fullName %>
-    </p>
+  <div class="request-card d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div>
+      <div class="fw-bold mb-1"><%= user.organizationName || user.fullName %></div>
+      <div class="text-muted small mb-1 text-capitalize"><%= user.role %></div>
+      <div class="small text-muted">
+        Requested on
+        <%= user.createdAt.toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "short",
+          year: "numeric"
+        }) %>
+      </div>
+    </div>
 
-    <p>
-      <strong>Role:</strong>
-      <%= user.role %>
-    </p>
-
-    <p>
-      <strong>Requested At:</strong>
-      <%= user.createdAt.toLocaleString() %>
-    </p>
-
-    <a href="/admin/requests/<%= user._id %>">View</a>
-
+    <a href="/admin/requests/<%= user._id %>" class="btn btn-outline-primary btn-sm px-3">
+      View
+    </a>
   </div>
 <% }) %>

@@ -1,3 +1,20 @@
+<style>
+@keyframes pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.4); }
+  100% { transform: scale(1); }
+}
+
+.animate-pop {
+  animation: pop 0.3s ease-out;
+}
+
+/* Ensure the icon can scale without moving other text */
+.like-btn i, .save-btn i {
+  display: inline-block;
+  transition: color 0.2s ease;
+}
+</style>
 <h2>Posts</h2>
 
 <% if (posts.length === 0) { %>
@@ -5,57 +22,138 @@
 <% } %>
 
 <% posts.forEach(post => { %>
-  <div class="card mb-4 border-1 shadow-sm rounded-3">
+  <div class="card mb-4 border shadow-sm rounded-4 overflow-hidden bg-white">
     <div class="card-body p-4">
 
-      <!-- Header -->
       <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
         <h5 class="fw-bold mb-0">
           <a href="/posts/<%= post._id %>" class="text-decoration-none" style="color: #04888D;">
             <%= post.title %>
           </a>
         </h5>
-        <small class="text-muted fw-light">
-          <%= post.createdAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) %>
-        </small>
+     <small class="text-muted fw-light">
+  <%= post.createdAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) %>
+</small>
       </div>
 
-      <!-- Description -->
-      <p class="text-secondary mb-3" style="line-height: 1.6; font-size: 0.95rem;">
-        <%= post.description %>
-      </p>
+      
+      <% if (post.images && post.images.length > 0) { %>
+  <div class="row g-2 mb-3">
+    <% post.images.forEach(img => { %>
+      <div class="<%= post.images.length === 1 ? 'col-12' : post.images.length === 2 ? 'col-md-6' : post.images.length === 3 ? 'col-md-4' : 'col-md-3' %>">
+        <img 
+          src="<%= img.url %>" 
+          class="rounded-3 border w-100"
+          style="height: 250px; object-fit: cover;"
+          alt="Post image">
+      </div>
+    <% }) %>
+  </div>
+<% } %>
+      <div class="text-secondary mb-3" style="line-height: 1.6; font-size: 0.95rem; white-space: pre-line;">
+  <%= post.description %>
+</div>
 
-      <!-- Tags -->
       <div class="mb-4">
         <% post.tags.forEach(tag => { %>
-          <span class="me-3 fw-medium" style="color: #1f2f9a; font-size: 0.9rem;">
-            #<%= tag %>
-          </span>
+          <span class="badge bg-light text-primary border rounded-pill me-2">#<%= tag %></span>
         <% }) %>
       </div>
 
-      <!-- Footer -->
       <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+        <div class="text-muted small d-flex align-items-center gap-4">
+          <% const liked = userId && post.likes.some(id => id.toString() === userId.toString()); %>
+          <div class="like-btn" data-id="<%= post._id %>" style="cursor: pointer;">
+            <i class="bi <%= liked ? 'bi-heart-fill text-danger' : 'bi-heart' %>"></i> 
+            <span class="like-count ms-1"><%= post.likes.length %></span>
+          </div>
 
-        <div class="text-muted small d-flex align-items-center">
-          <span class="me-3"><i class="bi bi-heart text-danger me-1"></i> 48</span>
-          <span class="me-3">
-            <a href="/posts/<%= post._id %>" class="text-decoration-none text-muted">
-              <i class="bi bi-chat-dots me-1"></i> <%= post.commentCount %>
-            </a>
-          </span>
-          <span><i class="bi bi-eye me-1"></i> 18</span>
+          <% const isSaved = userSavedPosts && userSavedPosts.some(id => id.toString() === post._id.toString()); %>
+          <div class="save-btn" data-id="<%= post._id %>" style="cursor: pointer;">
+            <i class="bi <%= isSaved ? 'bi-bookmark-fill text-warning' : 'bi-bookmark' %>"></i>
+          </div>
+
+          <a href="/posts/<%= post._id %>" class="text-decoration-none text-muted">
+            <i class="bi bi-chat-dots"></i> <%= post.commentCount %>
+          </a>
         </div>
 
         <div class="small">
-          <span class="text-muted">Posted by</span>
+          <span class="text-muted">By</span>
           <span class="fw-bold text-danger ms-1">
             <%= post.author ? (post.author.organizationName || post.author.fullName) : "Unknown" %>
           </span>
         </div>
-
       </div>
-
     </div>
   </div>
 <% }) %>
+
+<script>
+document.querySelectorAll(".like-btn").forEach(button => {
+  button.addEventListener("click", async () => {
+    const postId = button.dataset.id;
+    const icon = button.querySelector("i");
+
+    // Start Animation
+    icon.classList.add("animate-pop");
+    icon.addEventListener("animationend", () => {
+      icon.classList.remove("animate-pop");
+    }, { once: true });
+
+    try {
+      const res = await fetch(`/posts/${postId}/like`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        const countSpan = button.querySelector(".like-count");
+        countSpan.innerText = data.likeCount;
+
+        if (data.liked) {
+          icon.classList.replace("bi-heart", "bi-heart-fill");
+          icon.classList.add("text-danger");
+        } else {
+          icon.classList.replace("bi-heart-fill", "bi-heart");
+          icon.classList.remove("text-danger");
+        }
+      }
+    } catch (err) { console.error("Like error:", err); }
+  });
+});
+     
+</script>
+<script>
+document.querySelectorAll(".save-btn").forEach(button => {
+  button.addEventListener("click", async () => {
+    const postId = button.dataset.id;
+    const icon = button.querySelector("i");
+
+    // Start Animation
+    icon.classList.add("animate-pop");
+    icon.addEventListener("animationend", () => {
+      icon.classList.remove("animate-pop");
+    }, { once: true });
+
+    try {
+      const res = await fetch(`/posts/${postId}/save`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        if (data.saved) {
+          icon.classList.replace("bi-bookmark", "bi-bookmark-fill");
+          icon.classList.add("text-warning");
+        } else {
+          icon.classList.replace("bi-bookmark-fill", "bi-bookmark");
+          icon.classList.remove("text-warning");
+        }
+      }
+    } catch (err) { console.error("Save error:", err); }
+  });
+});
+</script>

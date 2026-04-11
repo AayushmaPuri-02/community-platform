@@ -18,10 +18,12 @@ const userSchema = new mongoose.Schema(
       type: String, enum: ["citizen", "organization", "communityAdmin", "systemAdmin"],default: "citizen",
     },
      isApproved: { type: Boolean,default: false },
+     isVerified: { type: Boolean, default: false,},
+verificationToken: { type: String, default: "",},
      profileCompleted: { type: Boolean, default: false },
      status: { type: String, enum: ["pending", "approved", "rejected"], default: "pending", },
      rejectionReason: { type: String, default: "" },
-
+     savedPosts: [ { type: mongoose.Schema.Types.ObjectId, ref: "Post",}],
   },
   { timestamps: true }
 );

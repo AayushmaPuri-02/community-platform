@@ -12,7 +12,12 @@ const postSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-
+images: [
+  {
+    url: String,
+    filename: String,
+  }
+],
     type: {
       type: String,
       enum: ["event", "volunteer", "alert", "training", "communityUpdate"],
@@ -24,6 +29,12 @@ const postSchema = new mongoose.Schema(
         type: String,
       },
     ],
+    likes: [
+  {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  }
+],
 
     author: {
       type: mongoose.Schema.Types.ObjectId,
@@ -31,6 +42,7 @@ const postSchema = new mongoose.Schema(
       required: true,
     },
   },
+  
   { timestamps: true }
 );
 

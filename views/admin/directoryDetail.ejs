@@ -1,0 +1,82 @@
+<p>
+  <a href="/admin/directory" class="btn btn-outline-secondary btn-sm">← Back to Directory</a>
+</p>
+
+<div class="detail-card">
+  <div class="row g-4 align-items-start">
+    <div class="col-md-4 col-lg-3 text-center">
+      <img
+        src="<%= user.profileImage || '/images/default-avatar.png' %>"
+        alt="Profile Image"
+        class="img-fluid rounded-4 border shadow-sm"
+        style="width: 100%; max-width: 220px; height: 220px; object-fit: cover;"
+      >
+    </div>
+
+    <div class="col-md-8 col-lg-9">
+      <div class="detail-row">
+        <span class="detail-label">Name</span>
+        <div><%= user.organizationName || user.fullName %></div>
+      </div>
+
+      <div class="detail-row">
+        <span class="detail-label">Email</span>
+        <div><%= user.email %></div>
+      </div>
+
+      <div class="detail-row">
+        <span class="detail-label">Role</span>
+        <div class="text-capitalize"><%= user.role %></div>
+      </div>
+
+      <div class="detail-row">
+        <span class="detail-label">Location</span>
+        <div><%= user.location || "N/A" %></div>
+      </div>
+
+      <% if (user.contactInfo) { %>
+        <div class="detail-row">
+          <span class="detail-label">Contact Info</span>
+          <div><%= user.contactInfo %></div>
+        </div>
+      <% } %>
+
+      <% if (user.mobileNumber) { %>
+        <div class="detail-row">
+          <span class="detail-label">Mobile Number</span>
+          <div><%= user.mobileNumber %></div>
+        </div>
+      <% } %>
+
+      <% if (user.bio) { %>
+        <div class="detail-row">
+          <span class="detail-label">Bio</span>
+          <div><%= user.bio %></div>
+        </div>
+      <% } %>
+
+      <% if (user.socialMediaLink) { %>
+        <div class="detail-row">
+          <span class="detail-label">Website / Social</span>
+          <a href="<%= user.socialMediaLink %>" target="_blank"><%= user.socialMediaLink %></a>
+        </div>
+      <% } %>
+
+      <div class="detail-row">
+        <span class="detail-label">Status</span>
+        <div class="text-capitalize"><%= user.status %></div>
+      </div>
+
+      <div class="detail-row">
+        <span class="detail-label">Joined</span>
+        <div>
+          <%= new Date(user.createdAt).toLocaleDateString("en-GB", {
+            day: "numeric",
+            month: "long",
+            year: "numeric"
+          }) %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
