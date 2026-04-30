@@ -47,8 +47,19 @@ router.get("/:id", async (req, res) => {
       backUrl = "/following";
     }
 
+    // For citizen profiles, fetch volunteer posts they have joined
+    let volunteerHistory = [];
+    if (user.role === "citizen") {
+      volunteerHistory = await Post.find({
+        "volunteers.user": user._id,
+        type: "volunteer"
+      }).populate("author").sort({ volunteerDate: -1 });
+    }
+
     res.render("users/show", {
-      title: user.organizationName || user.fullName,
+      title: user.role === "communityAdmin"
+        ? (user.communityName || user.location + " Locals")
+        : (user.organizationName || user.fullName),
       user,
       posts,
       isFollowing,
@@ -57,6 +68,7 @@ router.get("/:id", async (req, res) => {
       backUrl,
       userId: req.session.userId,
       role: req.session.role,
+      volunteerHistory,
     });
   } catch (err) {
     console.log(err);

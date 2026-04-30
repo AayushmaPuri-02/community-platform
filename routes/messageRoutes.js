@@ -3,6 +3,7 @@ const router = express.Router();
 const Message = require("../models/Message");
 const User = require("../models/User");
 const { isLoggedIn } = require("../middleware/authMiddleware");
+const { createNotification } = require("../utils/notifications");
 
 // helper to build conversation sidebar/inbox data
 async function getConversationList(currentUser) {
@@ -19,10 +20,15 @@ async function getConversationList(currentUser) {
   const conversationMap = new Map();
 
   for (const msg of allMessages) {
+    // Skip messages where either party's account has been deleted
+    if (!msg.sender || !msg.receiver) continue;
+
     const otherUser =
       msg.sender._id.toString() === currentUser.toString()
         ? msg.receiver
         : msg.sender;
+
+    if (!otherUser) continue;
 
     const otherUserId = otherUser._id.toString();
 
@@ -130,6 +136,16 @@ router.post("/:userId", isLoggedIn, async (req, res) => {
     });
 
     await newMessage.save();
+
+    // Notify the receiver
+    const sender = await User.findById(req.session.userId).select("fullName organizationName");
+    const senderName = sender ? (sender.organizationName || sender.fullName) : "Someone";
+    await createNotification(
+      req.params.userId,
+      `New message from ${senderName}`,
+      `/messages/${req.session.userId}`
+    );
+
     return res.redirect(`/messages/${req.params.userId}`);
   } catch (err) {
     console.log(err);
