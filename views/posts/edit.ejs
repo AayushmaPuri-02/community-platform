@@ -14,144 +14,297 @@
           <form action="/posts/<%= post._id %>/edit" method="POST" enctype="multipart/form-data">
             <div class="mb-3">
               <label for="title" class="form-label fw-semibold">Title</label>
-            <input
-  type="text"
-  id="title"
-  name="title"
-  class="form-control"
-  value="<%= post.title %>"
-  required
->
-<div class="invalid-feedback">
-  Title must not exceed 30 words.
-</div>
+              <input type="text" id="title" name="title" class="form-control" value="<%= post.title %>" required>
+              <div class="d-flex justify-content-between mt-1">
+                <span class="form-text">Maximum 20 words.</span>
+                <span class="form-text" id="titleWordCount">0 / 20 words</span>
+              </div>
+              <div class="invalid-feedback">Title must not exceed 20 words.</div>
             </div>
 
             <div class="mb-3">
               <label for="description" class="form-label fw-semibold">Description</label>
-            <textarea
-  id="description"
-  name="description"
-  class="form-control"
-  rows="5"
-  required
-><%= post.description %></textarea>
-
-<div class="invalid-feedback">
-  Description must not exceed 200 words.
-</div>
+              <div class="mb-1 d-flex gap-1" id="descToolbar">
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="mdWrap('description','**','**')"
+                  title="Bold"><b>B</b></button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="mdWrap('description','*','*')"
+                  title="Italic"><i>I</i></button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="mdPrefix('description','- ')"
+                  title="Bullet list"><i class="bi bi-list-ul"></i></button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="mdPrefix('description','1. ')"
+                  title="Numbered list"><i class="bi bi-list-ol"></i></button>
+              </div>
+              <textarea id="description" name="description" class="form-control" rows="5"
+                required><%= post.description %></textarea>
+              <div class="d-flex justify-content-end mt-1">
+                <span class="form-text" id="descWordCount">0 / 300 words</span>
+              </div>
+              <div class="invalid-feedback">Description must not exceed 300 words.</div>
             </div>
 
             <div class="mb-3">
               <label for="type" class="form-label fw-semibold">Type</label>
               <select id="type" name="type" class="form-select" required>
-                <option value="event" <%= post.type === "event" ? "selected" : "" %>>Event</option>
-                <option value="volunteer" <%= post.type === "volunteer" ? "selected" : "" %>>Volunteer</option>
-                <option value="alert" <%= post.type === "alert" ? "selected" : "" %>>Alert</option>
-                <option value="training" <%= post.type === "training" ? "selected" : "" %>>Training</option>
-                <option value="communityUpdate" <%= post.type === "communityUpdate" ? "selected" : "" %>>Community Update</option>
+                <option value="event" <%=post.type==="event" ? "selected" : "" %>>Event</option>
+                <option value="volunteer" <%=post.type==="volunteer" ? "selected" : "" %>>Volunteer</option>
+                <option value="alert" <%=post.type==="alert" ? "selected" : "" %>>Alert</option>
+                <option value="notice" <%=post.type==="notice" ? "selected" : "" %>>Notice</option>
+                <option value="training" <%=post.type==="training" ? "selected" : "" %>>Training</option>
+                <option value="communityUpdate" <%=post.type==="communityUpdate" ? "selected" : "" %>>Community Update
+                </option>
               </select>
+            </div>
+
+            <!-- Volunteer fields — shown only when type = volunteer -->
+            <div id="volunteerFields" style="display:<%= post.type === 'volunteer' ? 'block' : 'none' %>;">
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="volunteerDate" class="form-label fw-semibold">Volunteer Date</label>
+                  <input type="date" id="volunteerDate" name="volunteerDate" class="form-control"
+                    value="<%= post.volunteerDate ? post.volunteerDate.toISOString().split('T')[0] : '' %>">
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="maxVolunteers" class="form-label fw-semibold">Max Volunteers</label>
+                  <input type="number" id="maxVolunteers" name="maxVolunteers" class="form-control" min="1"
+                    value="<%= post.maxVolunteers || '' %>" placeholder="e.g. 20">
+                  <div class="form-text">Leave blank or 0 for unlimited.</div>
+                </div>
+              </div>
             </div>
 
             <div class="mb-3">
               <label for="tags" class="form-label fw-semibold">Tags (comma separated)</label>
-              <input
-                type="text"
-                id="tags"
-                name="tags"
-                class="form-control"
-                value="<%= post.tags && post.tags.length ? post.tags.join(", ") : "" %>"
-              >
+              <input type="text" id="tags" name="tags" class="form-control"
+                value="<%= post.tags && post.tags.length ? post.tags.join(" , ") : "" %>">
             </div>
 
-            <div class="mb-4">
-              <label class="form-label fw-semibold">Current Images</label>
+            <!-- Alert fields — shown only when type = alert -->
+            <div id="alertLocationFields" style="display:<%= post.type === 'alert' ? 'block' : 'none' %>;">
 
-              <% if (post.images && post.images.length > 0) { %>
-                <div class="row g-3 mb-3">
-                  <% post.images.forEach(image => { %>
-                    <div class="col-6 col-md-4">
-                      <img
-                        src="<%= image.url %>"
-                        alt="Post image"
-                        class="img-fluid rounded border"
-                        style="height: 180px; width: 100%; object-fit: cover;"
-                      >
-                    </div>
-                  <% }) %>
+              <div class="mb-3">
+                <label for="alertCategory" class="form-label fw-semibold">Alert Category</label>
+                <select id="alertCategory" name="alertCategory" class="form-select">
+                  <option value="">— Select category —</option>
+                  <option value="Safety" <%=post.alertCategory==='Safety' ? 'selected' : '' %>>Safety</option>
+                  <option value="Outage" <%=post.alertCategory==='Outage' ? 'selected' : '' %>>Outage</option>
+                  <option value="Weather" <%=post.alertCategory==='Weather' ? 'selected' : '' %>>Weather</option>
+                  <option value="Fire" <%=post.alertCategory==='Fire' ? 'selected' : '' %>>Fire</option>
+                  <option value="Traffic" <%=post.alertCategory==='Traffic' ? 'selected' : '' %>>Traffic</option>
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Alert Location</label>
+                <div class="d-flex gap-2 mb-2">
+                  <input type="text" id="alertLocationInput" class="form-control"
+                    placeholder="Search a place or click the map to pin" value="<%= post.locationName || '' %>">
+                  <button type="button" id="alertSearchBtn" class="btn btn-outline-secondary px-3">Search</button>
                 </div>
+                <div class="form-text mb-2">After searching, click anywhere on the map to pin the exact alert spot.
+                </div>
+                <div id="alertGoogleMap"
+                  style="height:280px; border-radius:10px; border:1px solid #dee2e6; display:<%= post.latitude ? 'block' : 'none' %>;">
+                </div>
+                <div id="alertLocationLabel" class="text-success small mt-2"
+                  style="display:<%= post.locationName ? 'block' : 'none' %>;">
+                  Pinned: <%= post.locationName || '' %>
+                </div>
+                <div id="alertLocationError" class="text-danger small mt-1" style="display:none;">
+                  Please pin a location before submitting.
+                </div>
+              </div>
+
+              <input type="hidden" id="locationNameInput" name="locationName" value="<%= post.locationName || '' %>">
+              <input type="hidden" id="latitudeInput" name="latitude" value="<%= post.latitude  || '' %>">
+              <input type="hidden" id="longitudeInput" name="longitude" value="<%= post.longitude || '' %>">
+
+              <div class="mb-3">
+                <label for="alertRadius" class="form-label fw-semibold">Affected Radius</label>
+                <select id="alertRadius" name="alertRadius" class="form-select">
+                  <option value="">— Select radius —</option>
+                  <option value="500m" <%=post.alertRadius==='500m' ? 'selected' : '' %>>500 m</option>
+                  <option value="1km" <%=post.alertRadius==='1km' ? 'selected' : '' %>>1 km</option>
+                  <option value="2km" <%=post.alertRadius==='2km' ? 'selected' : '' %>>2 km</option>
+                  <option value="5km" <%=post.alertRadius==='5km' ? 'selected' : '' %>>5 km</option>
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <label for="alertStatus" class="form-label fw-semibold">Alert Status</label>
+                <select id="alertStatus" name="alertStatus" class="form-select">
+                  <option value="Active" <%=(!post.alertStatus || post.alertStatus==='Active' ) ? 'selected' : '' %>
+                    >Active</option>
+                  <option value="Resolved" <%=(post.alertStatus==='Resolved' ) ? 'selected' : '' %>>Resolved</option>
+                </select>
+              </div>
+
+            </div>
+
+            <label class="form-label fw-semibold">Current Images</label>
+
+            <% if (post.images && post.images.length> 0) { %>
+              <div class="row g-3 mb-3">
+                <% post.images.forEach(image=> { %>
+                  <div class="col-6 col-md-4">
+                    <img src="<%= image.url %>" alt="Post image" class="img-fluid rounded border"
+                      style="height: 180px; width: 100%; object-fit: cover;">
+                  </div>
+                  <% }) %>
+              </div>
               <% } else { %>
                 <p class="text-muted mb-3">No images uploaded for this post.</p>
-              <% } %>
+                <% } %>
 
-              <label for="postImages" class="form-label fw-semibold">Upload New Images</label>
-              <input
-                type="file"
-                id="postImages"
-                name="postImages"
-                class="form-control"
-                accept="image/*"
-                multiple
-              >
-<div class="form-text text-danger">
-  If you upload new images, all existing images will be replaced. Allowed formats: JPG, JPEG, PNG. Maximum size: 1.5 MB per image. You can upload up to 4 images.
-</div>
-            </div>
-
-            <div class="d-flex gap-2">
-              <button type="submit" class="btn btn-primary">Update Post</button>
-              <a href="/posts/<%= post._id %>" class="btn btn-outline-secondary">Cancel</a>
-            </div>
-          </form>
+                  <label for="postImages" class="form-label fw-semibold">Upload New Images</label>
+                  <input type="file" id="postImages" name="postImages" class="form-control" accept="image/*" multiple>
+                  <div class="form-text text-danger">
+                    If you upload new images, all existing images will be replaced. Allowed formats: JPG, JPEG, PNG.
+                    Maximum size: 1.5 MB per image. You can upload up to 4 images.
+                  </div>
         </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn btn-primary">Update Post</button>
+          <a href="/posts/<%= post._id %>" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+        </form>
       </div>
     </div>
   </div>
 </div>
+</div>
 
 <script>
-  function wordCount(text) {
-    return text.trim().split(/\s+/).filter(Boolean).length;
+  function countWords(text) {
+    return text.trim() === '' ? 0 : text.trim().split(/\s+/).filter(Boolean).length;
   }
 
-  const titleInput = document.getElementById("title");
-  const descInput = document.getElementById("description");
+  var titleInput = document.getElementById("title");
+  var descInput = document.getElementById("description");
+  var titleWordCount = document.getElementById("titleWordCount");
+  var descWordCount = document.getElementById("descWordCount");
 
-  titleInput.addEventListener("input", () => {
-    const count = wordCount(titleInput.value);
+  function updateTitleCount() {
+    var words = countWords(titleInput.value);
+    titleWordCount.textContent = words + ' / 20 words';
+    if (words > 20) { titleInput.classList.add("is-invalid"); titleWordCount.style.color = '#dc3545'; }
+    else { titleInput.classList.remove("is-invalid"); titleWordCount.style.color = ''; }
+  }
 
-    if (count > 30) {
-      titleInput.classList.add("is-invalid");
-    } else {
-      titleInput.classList.remove("is-invalid");
-    }
-  });
+  function updateDescCount() {
+    var words = countWords(descInput.value);
+    descWordCount.textContent = words + ' / 300 words';
+    if (words > 300) { descInput.classList.add("is-invalid"); descWordCount.style.color = '#dc3545'; }
+    else { descInput.classList.remove("is-invalid"); descWordCount.style.color = ''; }
+  }
 
-  descInput.addEventListener("input", () => {
-    const count = wordCount(descInput.value);
+  titleInput.addEventListener("input", updateTitleCount);
+  descInput.addEventListener("input", updateDescCount);
 
-    if (count > 200) {
-      descInput.classList.add("is-invalid");
-    } else {
-      descInput.classList.remove("is-invalid");
-    }
-  });
+  // initialise counters with existing content
+  updateTitleCount();
+  updateDescCount();
 
-  // Prevent submit if invalid
+  // Show/hide volunteer fields
+  var typeSelect = document.getElementById("type");
+  var volunteerFields = document.getElementById("volunteerFields");
+  var alertLocationFields = document.getElementById("alertLocationFields");
+
+  function toggleTypeFields() {
+    volunteerFields.style.display = typeSelect.value === "volunteer" ? "block" : "none";
+    alertLocationFields.style.display = typeSelect.value === "alert" ? "block" : "none";
+    if (typeSelect.value === "alert") loadGoogleMaps();
+  }
+  typeSelect.addEventListener("change", toggleTypeFields);
+
   document.querySelector("form").addEventListener("submit", function (e) {
-    const titleCount = wordCount(titleInput.value);
-    const descCount = wordCount(descInput.value);
-
-    if (titleCount > 30 || descCount > 200) {
+    if (countWords(titleInput.value) > 20 || countWords(descInput.value) > 300) {
       e.preventDefault();
-
-      if (titleCount > 30) {
-        titleInput.classList.add("is-invalid");
-      }
-
-      if (descCount > 200) {
-        descInput.classList.add("is-invalid");
+      updateTitleCount();
+      updateDescCount();
+    }
+    if (typeSelect.value === "alert") {
+      var lat = document.getElementById("latitudeInput").value;
+      var lng = document.getElementById("longitudeInput").value;
+      if (!lat || !lng) {
+        e.preventDefault();
+        document.getElementById("alertLocationError").style.display = "block";
+        document.getElementById("alertLocationInput").focus();
       }
     }
   });
+
+  // ── Google Maps alert location ────────────────────────────────────────────
+  var mapsLoaded = false;
+
+  function loadGoogleMaps() {
+    if (mapsLoaded) return;
+    mapsLoaded = true;
+    var script = document.createElement('script');
+    script.src = 'https://maps.googleapis.com/maps/api/js?key=<%= googleMapsApiKey %>&callback=initAlertMapCallback&loading=async';
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+  }
+
+  window.initAlertMapCallback = function () {
+    if (document.getElementById('alertLocationFields').style.display !== 'none') {
+      var lat = parseFloat(document.getElementById('latitudeInput').value) || 0;
+      var lng = parseFloat(document.getElementById('longitudeInput').value) || 0;
+      initAlertLocationPicker(lat, lng);
+    }
+  };
+
+  function toggleTypeFields() {
+    volunteerFields.style.display = typeSelect.value === 'volunteer' ? 'block' : 'none';
+    alertLocationFields.style.display = typeSelect.value === 'alert' ? 'block' : 'none';
+    if (typeSelect.value === 'alert') loadGoogleMaps();
+  }
+  typeSelect.addEventListener('change', toggleTypeFields);
+
+  // If editing an alert post, load Maps immediately
+  if (typeSelect.value === 'alert') {
+    loadGoogleMaps();
+  }
+</script>
+<script src="/js/alertLocationPicker.js"></script>
+
+<script>
+  function mdWrap(id, before, after) {
+    var ta = document.getElementById(id);
+    var start = ta.selectionStart;
+    var end = ta.selectionEnd;
+    var selected = ta.value.substring(start, end);
+    var replacement = before + (selected || 'text') + after;
+    ta.value = ta.value.substring(0, start) + replacement + ta.value.substring(end);
+    ta.selectionStart = start + before.length;
+    ta.selectionEnd = start + before.length + (selected || 'text').length;
+    ta.focus();
+  }
+
+  function mdPrefix(id, prefix) {
+    var ta = document.getElementById(id);
+    var start = ta.selectionStart;
+    var end = ta.selectionEnd;
+    var selected = ta.value.substring(start, end);
+
+    if (selected.length > 0) {
+      // Multi-line: prefix every line
+      var lines = selected.split('\n');
+      var isNumbered = /^\d+\. $/.test(prefix);
+      var replaced = lines.map(function (line, i) {
+        if (isNumbered) return (i + 1) + '. ' + line;
+        return prefix + line;
+      }).join('\n');
+      ta.value = ta.value.substring(0, start) + replaced + ta.value.substring(end);
+      ta.selectionStart = start;
+      ta.selectionEnd = start + replaced.length;
+    } else {
+      // No selection: prefix current line
+      var lineStart = ta.value.lastIndexOf('\n', start - 1) + 1;
+      ta.value = ta.value.substring(0, lineStart) + prefix + ta.value.substring(lineStart);
+      ta.selectionStart = ta.selectionEnd = start + prefix.length;
+    }
+    ta.focus();
+  }
 </script>

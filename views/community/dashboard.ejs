@@ -1,0 +1,407 @@
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="py-4 px-2">
+
+    <!-- HEADER -->
+    <div class="mb-4">
+        <h2 class="fw-bold mb-1">
+            <% if (user.role==="communityAdmin" ) { %>
+                <%= user.communityName || (user.location + " Locals" ) %>
+                    <% } else { %>
+                        <%= user.organizationName || user.fullName %>
+                            <% } %>
+        </h2>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <% if (user.isVerified) { %>
+                <span class="badge bg-success">Verified</span>
+                <% } else if (user.isApproved) { %>
+                    <span class="badge bg-warning text-dark">Approved — Email not verified</span>
+                    <% } else { %>
+                        <span class="badge bg-secondary">Pending Approval</span>
+                        <% } %>
+                            <% if (user.location) { %>
+                                <span class="text-muted small">Area: <%= user.location %></span>
+                                <% } %>
+        </div>
+    </div>
+
+    <!-- STAT CARDS -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card border-0 shadow-sm rounded-4 text-center p-3">
+                <div class="fw-bold" style="font-size:1.7rem; color:#04888D;">
+                    <%= totalPosts %>
+                </div>
+                <div class="text-muted small">Total Posts</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card border-0 shadow-sm rounded-4 text-center p-3">
+                <div class="fw-bold" style="font-size:1.7rem; color:#dc3545;">
+                    <%= alertPosts %>
+                </div>
+                <div class="text-muted small">Alerts</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card border-0 shadow-sm rounded-4 text-center p-3">
+                <div class="fw-bold" style="font-size:1.7rem; color:#f59e0b;">
+                    <%= followerCount %>
+                </div>
+                <div class="text-muted small">Followers</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card border-0 shadow-sm rounded-4 text-center p-3">
+                <div class="fw-bold" style="font-size:1.7rem; color:#6c757d;">
+                    <%= followingCount %>
+                </div>
+                <div class="text-muted small">Following</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card border-0 shadow-sm rounded-4 text-center p-3">
+                <div class="fw-bold" style="font-size:1.7rem; color:#0d6efd;">
+                    <%= postsThisWeek %>
+                </div>
+                <div class="text-muted small">This Week</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CHART + LATEST POSTS -->
+    <div class="row g-4">
+
+        <!-- PIE CHART -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+                <h6 class="fw-bold mb-3 text-muted">Posts by Type</h6>
+                <% if (!postTypeCounts || postTypeCounts.length===0) { %>
+                    <div class="text-center py-4">
+                        <i class="bi bi-bar-chart text-muted" style="font-size:2rem;"></i>
+                        <p class="text-muted small mt-2 mb-0">No data to display.</p>
+                    </div>
+                    <% } else { %>
+                        <canvas id="postTypeChart"></canvas>
+                        <script type="application/json"
+                            id="postTypeCountsData"><%- JSON.stringify(postTypeCounts || []) %></script>
+                        <% } %>
+            </div>
+        </div>
+
+        <!-- LATEST POSTS -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+                <h6 class="fw-bold mb-3 text-muted">Recent Posts</h6>
+                <% if (recentPosts.length===0) { %>
+                    <p class="text-muted small mb-0">No posts yet.</p>
+                    <% } else { %>
+                        <% recentPosts.forEach(function(post) { %>
+                            <div class="d-flex justify-content-between align-items-start py-2 border-bottom">
+                                <div class="flex-grow-1 me-3">
+                                    <a href="/posts/<%= post._id %>" class="text-decoration-none fw-semibold"
+                                        style="color:#04888D; font-size:0.95rem;">
+                                        <%= post.title %>
+                                    </a>
+                                    <div class="mt-1">
+                                        <span class="badge bg-light text-dark border text-capitalize"
+                                            style="font-size:0.72rem;">
+                                            <%= post.type %>
+                                        </span>
+                                    </div>
+                                </div>
+                                <small class="text-muted flex-shrink-0 post-date"
+                                    data-created="<%= post.createdAt.toISOString() %>"></small>
+                            </div>
+                            <% }); %>
+                                <% } %>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<% if (volunteerPosts && volunteerPosts.length> 0) { %>
+    <div class="py-2 px-2 pb-4">
+        <div class="card border-0 shadow-sm rounded-4 p-4">
+            <h6 class="fw-bold mb-3 text-muted">Volunteer Posts</h6>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" style="font-size:0.9rem;">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Title</th>
+                            <th>Date</th>
+                            <th>Signups</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% volunteerPosts.forEach(function(vp, vpIdx) { var now=new Date(); var vpDate=vp.volunteerDate
+                            ? new Date(vp.volunteerDate) : null; var vpActiveCount=vp.volunteers.filter(function(v){
+                            return v.status==='pending' || v.status==='attended' ; }).length; var
+                            isFull=vp.maxVolunteers> 0 && vpActiveCount >= vp.maxVolunteers;
+                            var isPast = vpDate && vpDate < now; var statusLabel=isPast ? "Past" : (isFull ? "Full"
+                                : "Open" ); var statusClass=isPast ? "bg-secondary" : (isFull ? "bg-warning text-dark"
+                                : "bg-success" ); %>
+                                <tr>
+                                    <td>
+                                        <a href="/posts/<%= vp._id %>" class="text-decoration-none fw-semibold"
+                                            style="color:#04888D;">
+                                            <%= vp.title %>
+                                        </a>
+                                    </td>
+                                    <td class="text-muted">
+                                        <% if (vpDate) { %>
+                                            <%= vpDate.toLocaleDateString("en-GB", { day:"numeric", month:"short",
+                                                year:"numeric" }) %>
+                                                <% } else { %>
+                                                    —
+                                                    <% } %>
+                                    </td>
+                                    <td class="text-muted">
+                                        <%= vpActiveCount %>
+                                            <% if (vp.maxVolunteers> 0) { %> / <%= vp.maxVolunteers %>
+                                                    <% } %>
+                                    </td>
+                                    <td><span class="badge <%= statusClass %>">
+                                            <%= statusLabel %>
+                                        </span></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                                            data-bs-toggle="modal" data-bs-target="#volModal-<%= vpIdx %>">
+                                            View Volunteers
+                                        </button>
+                                    </td>
+                                </tr>
+                                <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Volunteer modals — one per volunteer post -->
+    <% volunteerPosts.forEach(function(vp, vpIdx) { %>
+        <div class="modal fade" id="volModal-<%= vpIdx %>" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content border-0 rounded-4 shadow">
+                    <div class="modal-header border-0 pb-0">
+                        <h5 class="modal-title fw-bold">
+                            <%= vp.title %> — Volunteers
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <% if (vp.volunteers.filter(function(v){ return v.status !=='rejected' ; }).length===0) { %>
+                            <p class="text-muted mb-0">No volunteers yet.</p>
+                            <% } else { %>
+                                <div class="accordion" id="dashVolAccordion-<%= vpIdx %>">
+                                    <% vp.volunteers.forEach(function(v, vi) { %>
+                                        <div class="accordion-item border mb-2 rounded-3 overflow-hidden">
+                                            <h2 class="accordion-header">
+                                                <button class="accordion-button collapsed py-2 px-3" type="button"
+                                                    data-bs-toggle="collapse"
+                                                    data-bs-target="#dv-<%= vpIdx %>-<%= vi %>">
+                                                    <span class="fw-semibold me-2">
+                                                        <%= v.fullName %>
+                                                    </span>
+                                                    <% var vHeaderStatus=v.status || (v.attended ? 'attended'
+                                                        : 'pending' ); %>
+                                                        <% if (vHeaderStatus==='attended' ) { %>
+                                                            <span class="badge bg-success ms-2"
+                                                                style="font-size:0.72rem;">Attended</span>
+                                                            <% } else if (vHeaderStatus==='rejected' ) { %>
+                                                                <span class="badge bg-danger ms-2"
+                                                                    style="font-size:0.72rem;">Rejected</span>
+                                                                <% } else { %>
+                                                                    <span class="badge bg-warning text-dark ms-2"
+                                                                        style="font-size:0.72rem;">Pending</span>
+                                                                    <% } %>
+                                                </button>
+                                            </h2>
+                                            <div id="dv-<%= vpIdx %>-<%= vi %>" class="accordion-collapse collapse">
+                                                <div class="accordion-body py-2 px-3" style="font-size:0.9rem;">
+                                                    <p class="mb-1"><strong>Phone:</strong>
+                                                        <%= v.phone %>
+                                                    </p>
+                                                    <% if (v.note) { %>
+                                                        <p class="mb-1"><strong>Note:</strong>
+                                                            <%= v.note %>
+                                                        </p>
+                                                        <% } %>
+                                                            <p class="mb-2"><strong>Joined:</strong>
+                                                                <%= v.joinedAt ? new
+                                                                    Date(v.joinedAt).toLocaleDateString("en-GB", {
+                                                                    day:"numeric", month:"long", year:"numeric" })
+                                                                    : "N/A" %>
+                                                            </p>
+                                                            <% if (v.user) { %>
+                                                                <p class="mb-2">
+                                                                    <a href="/users/<%= v.user %>" target="_blank"
+                                                                        class="btn btn-sm btn-outline-secondary rounded-pill px-3"
+                                                                        style="font-size:0.8rem;">
+                                                                        <i class="bi bi-person me-1"></i>View Profile
+                                                                    </a>
+                                                                </p>
+                                                                <% } %>
+                                                                    <% var vStatus=v.status || (v.attended ? 'attended'
+                                                                        : 'pending' ); var canMarkAttend=false; var
+                                                                        isPastDate=false; if (vp.volunteerDate) { var
+                                                                        todayD=new Date(); todayD.setHours(0,0,0,0); var
+                                                                        vpD=new Date(vp.volunteerDate);
+                                                                        vpD.setHours(0,0,0,0); canMarkAttend=(todayD>=
+                                                                        vpD);
+                                                                        isPastDate = (todayD > vpD);
+                                                                        }
+                                                                        %>
+                                                                        <% if (vStatus==='attended' ) { %>
+                                                                            <span
+                                                                                class="badge bg-success px-3 py-2">Attended
+                                                                                —
+                                                                                Permanent</span>
+                                                                            <% } else if (vStatus==='rejected' ) { %>
+                                                                                <span
+                                                                                    class="badge bg-danger px-3 py-2">Rejected</span>
+                                                                                <% if (v.rejectionReason) { %>
+                                                                                    <p
+                                                                                        class="text-muted small mt-1 mb-0">
+                                                                                        Reason: <%= v.rejectionReason %>
+                                                                                    </p>
+                                                                                    <% } %>
+                                                                                        <% } else { %>
+                                                                                            <div
+                                                                                                class="d-flex gap-2 flex-wrap align-items-start">
+                                                                                                <% if (canMarkAttend) {
+                                                                                                    %>
+                                                                                                    <form
+                                                                                                        action="/posts/<%= vp._id %>/volunteer/<%= v._id %>/attend"
+                                                                                                        method="POST"
+                                                                                                        class="m-0">
+                                                                                                        <input
+                                                                                                            type="hidden"
+                                                                                                            name="fromDashboard"
+                                                                                                            value="1">
+                                                                                                        <button
+                                                                                                            type="submit"
+                                                                                                            class="btn btn-sm btn-outline-success rounded-pill px-3">Mark
+                                                                                                            as
+                                                                                                            Attended</button>
+                                                                                                    </form>
+                                                                                                    <% } else { %>
+                                                                                                        <button
+                                                                                                            type="button"
+                                                                                                            class="btn btn-sm btn-outline-secondary rounded-pill px-3"
+                                                                                                            disabled>Mark
+                                                                                                            as
+                                                                                                            Attended</button>
+                                                                                                        <div class="text-muted w-100"
+                                                                                                            style="font-size:0.78rem;">
+                                                                                                            Available on
+                                                                                                            or
+                                                                                                            after the
+                                                                                                            volunteer
+                                                                                                            date.</div>
+                                                                                                        <% } %>
+                                                                                                            <% if
+                                                                                                                (!isPastDate)
+                                                                                                                { %>
+                                                                                                                <button
+                                                                                                                    type="button"
+                                                                                                                    class="btn btn-sm btn-outline-danger rounded-pill px-3"
+                                                                                                                    data-bs-toggle="collapse"
+                                                                                                                    data-bs-target="#rejectForm-<%= vpIdx %>-<%= vi %>">Reject</button>
+                                                                                                                <div class="collapse mt-2 w-100"
+                                                                                                                    id="rejectForm-<%= vpIdx %>-<%= vi %>">
+                                                                                                                    <form
+                                                                                                                        action="/posts/<%= vp._id %>/volunteer/<%= v._id %>/reject"
+                                                                                                                        method="POST">
+                                                                                                                        <input
+                                                                                                                            type="hidden"
+                                                                                                                            name="fromDashboard"
+                                                                                                                            value="1">
+                                                                                                                        <textarea
+                                                                                                                            name="rejectionReason"
+                                                                                                                            class="form-control form-control-sm mb-2"
+                                                                                                                            rows="2"
+                                                                                                                            placeholder="Reason for rejection (required)"
+                                                                                                                            required></textarea>
+                                                                                                                        <button
+                                                                                                                            type="submit"
+                                                                                                                            class="btn btn-sm btn-danger rounded-pill px-3">Confirm
+                                                                                                                            Reject</button>
+                                                                                                                    </form>
+                                                                                                                </div>
+                                                                                                                <% } %>
+                                                                                            </div>
+                                                                                            <% } %>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <% }); %>
+                                </div>
+                                <% } %>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-light rounded-pill px-4"
+                            data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <% }); %>
+            <% } %>
+
+                <script>
+                    document.addEventListener("DOMContentLoaded", function () {
+
+                        // Smart date formatting
+                        document.querySelectorAll('.post-date').forEach(function (el) {
+                            var created = new Date(el.getAttribute('data-created'));
+                            var now = new Date();
+                            var isToday = created.getDate() === now.getDate() &&
+                                created.getMonth() === now.getMonth() &&
+                                created.getFullYear() === now.getFullYear();
+                            if (isToday) {
+                                el.textContent = created.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                            } else {
+                                el.textContent = created.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                            }
+                        });
+
+                        // Chart
+                        var canvas = document.getElementById('postTypeChart');
+                        if (!canvas) return;
+
+                        var rawData = JSON.parse(document.getElementById('postTypeCountsData').textContent || '[]');
+                        if (!rawData || rawData.length === 0) return;
+
+                        var labels = rawData.map(function (item) {
+                            var k = item._id || "unknown";
+                            return k.charAt(0).toUpperCase() + k.slice(1);
+                        });
+                        var values = rawData.map(function (item) { return item.count; });
+                        var colors = ['#04888D', '#dc3545', '#f59e0b', '#6c757d', '#0d6efd', '#198754'];
+
+                        new Chart(canvas, {
+                            type: 'pie',
+                            data: {
+                                labels: labels,
+                                datasets: [{
+                                    data: values,
+                                    backgroundColor: colors.slice(0, values.length),
+                                    borderWidth: 1
+                                }]
+                            },
+                            options: {
+                                plugins: {
+                                    legend: { position: 'bottom', labels: { font: { size: 12 }, padding: 12 } }
+                                },
+                                responsive: true,
+                                maintainAspectRatio: true
+                            }
+                        });
+
+                    });
+                </script>

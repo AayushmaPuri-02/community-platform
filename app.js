@@ -6,7 +6,7 @@ dotenv.config();
 const session = require("express-session");
 const methodOverride = require("method-override");
 const expressLayouts = require("express-ejs-layouts");
-const {isLoggedIn, isOrganization} = require("./middleware/authMiddleware")
+const { isLoggedIn, isOrganization } = require("./middleware/authMiddleware")
 const authRoutes = require("./routes/authRoutes");
 const postRoutes = require("./routes/postRoutes");
 const Post = require("./models/Post");
@@ -22,6 +22,10 @@ const flash = require("connect-flash");
 const { ensureProfileComplete } = require("./middleware/authMiddleware");
 const messageRoutes = require("./routes/messageRoutes");
 const Message = require("./models/Message");
+const settingsRoutes = require("./routes/settingsRoutes");
+const reportRoutes = require("./routes/reportRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
+const Notification = require("./models/Notification");
 
 
 const app = express();
@@ -92,6 +96,33 @@ app.use(async (req, res, next) => {
     next();
   }
 });
+
+// notifications
+app.use(async (req, res, next) => {
+  try {
+    if (req.session.userId) {
+      res.locals.notifUnreadCount = await Notification.countDocuments({
+        recipient: req.session.userId,
+        isRead: false,
+      });
+
+      res.locals.notifications = await Notification.find({
+        recipient: req.session.userId,
+      })
+        .sort({ createdAt: -1 })
+        .limit(10);
+    } else {
+      res.locals.notifUnreadCount = 0;
+      res.locals.notifications = [];
+    }
+    next();
+  } catch (err) {
+    console.log(err);
+    res.locals.notifUnreadCount = 0;
+    res.locals.notifications = [];
+    next();
+  }
+});
 // View engine
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
@@ -121,65 +152,82 @@ app.get("/", (req, res) => {
   });
 });
 
+// ── Public info pages ─────────────────────────────────────────────────────────
+const infoOpts = { hideSidebar: true, layout: "layouts/info" };
 
-app.get("/home", ensureProfileComplete, async (req, res) => {
+app.get("/about", (req, res) => res.render("info/about", { title: "About — Local Connect", ...infoOpts }));
+app.get("/how-it-works", (req, res) => res.render("info/how-it-works", { title: "How It Works — Local Connect", ...infoOpts }));
+app.get("/community-guidelines", (req, res) => res.render("info/guidelines", { title: "Community Guidelines — Local Connect", ...infoOpts }));
+app.get("/help", (req, res) => res.render("info/help", { title: "Help & Support — Local Connect", ...infoOpts }));
+
+
+app.get("/home", isLoggedIn, ensureProfileComplete, async (req, res) => {
   try {
-    let followedUserIds = [];
+    const selectedType = req.query.type || "";
+    const searchQuery = req.query.search || "";
 
-    if (req.session.userId) {
-      const follows = await Follow.find({
-        follower: req.session.userId,
-      });
-
-      followedUserIds = follows.map(f => f.following);
+    const filter = {};
+    if (selectedType) filter.type = selectedType;
+    if (searchQuery) {
+      const regex = new RegExp(searchQuery, "i");
+      filter.$or = [{ title: regex }, { tags: regex }];
     }
 
-    // 1. posts from followed users
-    const followedPosts = await Post.find({
-      author: { $in: followedUserIds },
-    })
+    // Single mixed feed — all posts, shuffled
+    const posts = await Post.find(filter)
       .populate("author")
       .sort({ createdAt: -1 });
 
-    // 2. other posts
-    const otherPosts = await Post.find({
-      author: { $nin: followedUserIds },
-    })
-      .populate("author")
-      .sort({ createdAt: -1 });
+    // Fisher-Yates shuffle for random feed order
+    for (let i = posts.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [posts[i], posts[j]] = [posts[j], posts[i]];
+    }
 
-    // combine
-    const posts = [...followedPosts, ...otherPosts];
-
-    // attach comment count
     for (let post of posts) {
-      const count = await Comment.countDocuments({ post: post._id });
-      post.commentCount = count;
+      post.commentCount = await Comment.countDocuments({ post: post._id });
     }
+
+    // Recent posts sidebar — last 7 days only, newest first, no shuffle
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const recentPosts = await Post.find({ createdAt: { $gte: sevenDaysAgo } })
+      .populate("author", "fullName organizationName communityName")
+      .sort({ createdAt: -1 })
+      .limit(8);
 
     const currentUser = req.session.userId ? await User.findById(req.session.userId) : null;
+
     res.render("auth/index", {
       title: "Home",
       posts,
-      userSavedPosts: currentUser ? currentUser.savedPosts : []
+      recentPosts,
+      userSavedPosts: currentUser ? currentUser.savedPosts : [],
+      selectedType,
+      searchQuery,
     });
   } catch (err) {
     console.log(err);
     res.send("Error loading homepage");
   }
 });
+const chatbotRoutes = require("./routes/chatbotRoutes");
+app.use("/api/chatbot", chatbotRoutes);
 app.use("/", authRoutes);
 app.use("/", postRoutes);
 app.use("/admin", adminRoutes);
 app.use("/profile", profileRoutes);
-app.use("/users", ensureProfileComplete,userRoutes);
+app.use("/users", ensureProfileComplete, userRoutes);
 app.use("/follow", followRoutes);
-app.use("/following",ensureProfileComplete, followingRoutes);
+app.use("/following", ensureProfileComplete, followingRoutes);
 app.use("/messages", messageRoutes);
+app.use("/settings", settingsRoutes);
+app.use("/", reportRoutes);
+app.use("/", notificationRoutes);
 
 
 //explore page
-app.get("/explore", ensureProfileComplete, async (req, res) => {
+app.get("/explore", isLoggedIn, ensureProfileComplete, async (req, res) => {
   try {
     const currentUserId = req.session.userId;
 
@@ -223,6 +271,34 @@ app.get("/explore", ensureProfileComplete, async (req, res) => {
   }
 });
 
+// alerts page
+app.get("/alerts", isLoggedIn, ensureProfileComplete, async (req, res) => {
+  try {
+    const alertPosts = await Post.find({ type: "alert" })
+      .populate("author")
+      .sort({ createdAt: -1 });
+
+    for (let post of alertPosts) {
+      const count = await Comment.countDocuments({ post: post._id });
+      post.commentCount = count;
+    }
+
+    const currentUser = req.session.userId ? await User.findById(req.session.userId) : null;
+
+    res.render("alerts/index", {
+      title: "Alerts",
+      posts: alertPosts,
+      userSavedPosts: currentUser ? currentUser.savedPosts : [],
+      googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || "",
+      homeLatitude: currentUser ? (currentUser.homeLatitude || null) : null,
+      homeLongitude: currentUser ? (currentUser.homeLongitude || null) : null,
+    });
+  } catch (err) {
+    console.log(err);
+    res.send("Error loading alerts");
+  }
+});
+
 //saved page
 app.get("/saved", isLoggedIn, ensureProfileComplete, async (req, res) => {
   try {
@@ -245,8 +321,157 @@ app.get("/dashboard", isLoggedIn, (req, res) => {
   res.send("Welcome to dashboard");
 });
 
-app.get("/org-dashboard", isLoggedIn, isOrganization, (req, res) => {
-  res.send("Organization dashboard");
+// GET /share/recipients — returns messageable users for the share-via-message modal
+app.get("/share/recipients", isLoggedIn, async (req, res) => {
+  try {
+    const users = await User.find({
+      _id: { $ne: req.session.userId },
+      role: { $ne: "systemAdmin" },
+      status: "approved",
+      isVerified: true,
+    })
+      .select("_id fullName organizationName communityName role")
+      .sort({ fullName: 1, organizationName: 1 })
+      .limit(100);
+
+    const list = users.map(u => ({
+      _id: u._id,
+      name: u.communityName || u.organizationName || u.fullName || "Unknown",
+      role: u.role,
+    }));
+
+    return res.json(list);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json([]);
+  }
+});
+
+app.get("/community-dashboard", isLoggedIn, async (req, res) => {
+  if (req.session.role !== "communityAdmin") {
+    req.flash("error", "Access denied");
+    return res.redirect("/home");
+  }
+
+  try {
+    const user = await User.findById(req.session.userId);
+    if (!user) return res.redirect("/login");
+
+    const totalPosts = await Post.countDocuments({ author: user._id });
+    const alertPosts = await Post.countDocuments({ author: user._id, type: "alert" });
+    const recentPosts = await Post.find({ author: user._id }).sort({ createdAt: -1 }).limit(5);
+
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    const postsThisWeek = await Post.countDocuments({
+      author: user._id,
+      createdAt: { $gte: oneWeekAgo }
+    });
+
+    const followerCount = await Follow.countDocuments({ following: user._id });
+    const followingCount = await Follow.countDocuments({ follower: user._id });
+
+    const typeAggregation = await Post.aggregate([
+      { $match: { author: user._id } },
+      { $group: { _id: "$type", count: { $sum: 1 } } }
+    ]);
+    const postTypeCounts = typeAggregation;
+
+    // 7-day grace period: show volunteer posts up to 7 days after their event date
+    const now = new Date();
+    const sevenDaysAgo = new Date(now);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const volunteerPosts = await Post.find({
+      author: user._id,
+      type: "volunteer",
+      volunteerDate: { $gte: sevenDaysAgo }
+    }).sort({ volunteerDate: 1 });
+
+    const activeVolunteerPosts = volunteerPosts.filter(p => !p.volunteerDate || new Date(p.volunteerDate) >= now);
+    const pastVolunteerPosts = volunteerPosts.filter(p => p.volunteerDate && new Date(p.volunteerDate) < now);
+
+    res.render("community/dashboard", {
+      title: "Dashboard",
+      user,
+      totalPosts,
+      alertPosts,
+      recentPosts,
+      postsThisWeek,
+      followerCount,
+      followingCount,
+      postTypeCounts,
+      volunteerPosts,
+      activeVolunteerPosts,
+      pastVolunteerPosts,
+    });
+  } catch (err) {
+    console.log(err);
+    res.send("Error loading dashboard");
+  }
+});
+
+app.get("/org-dashboard", isLoggedIn, async (req, res) => {
+  if (req.session.role !== "organization") {
+    req.flash("error", "Access denied");
+    return res.redirect("/home");
+  }
+
+  try {
+    const user = await User.findById(req.session.userId);
+    if (!user) return res.redirect("/login");
+
+    const totalPosts = await Post.countDocuments({ author: user._id });
+    const alertPosts = await Post.countDocuments({ author: user._id, type: "alert" });
+    const recentPosts = await Post.find({ author: user._id }).sort({ createdAt: -1 }).limit(5);
+
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    const postsThisWeek = await Post.countDocuments({
+      author: user._id,
+      createdAt: { $gte: oneWeekAgo }
+    });
+
+    const followerCount = await Follow.countDocuments({ following: user._id });
+    const followingCount = await Follow.countDocuments({ follower: user._id });
+
+    const postTypeCounts = await Post.aggregate([
+      { $match: { author: user._id } },
+      { $group: { _id: "$type", count: { $sum: 1 } } }
+    ]);
+
+    // 7-day grace period: show volunteer posts up to 7 days after their event date
+    const now2 = new Date();
+    const sevenDaysAgo2 = new Date(now2);
+    sevenDaysAgo2.setDate(sevenDaysAgo2.getDate() - 7);
+
+    const volunteerPosts = await Post.find({
+      author: user._id,
+      type: "volunteer",
+      volunteerDate: { $gte: sevenDaysAgo2 }
+    }).sort({ volunteerDate: 1 });
+
+    const activeVolunteerPosts = volunteerPosts.filter(p => !p.volunteerDate || new Date(p.volunteerDate) >= now2);
+    const pastVolunteerPosts = volunteerPosts.filter(p => p.volunteerDate && new Date(p.volunteerDate) < now2);
+
+    res.render("community/dashboard", {
+      title: "Dashboard",
+      user,
+      totalPosts,
+      alertPosts,
+      recentPosts,
+      postsThisWeek,
+      followerCount,
+      followingCount,
+      postTypeCounts,
+      volunteerPosts,
+      activeVolunteerPosts,
+      pastVolunteerPosts,
+    });
+  } catch (err) {
+    console.log(err);
+    res.send("Error loading dashboard");
+  }
 });
 
 app.listen(PORT, () => {

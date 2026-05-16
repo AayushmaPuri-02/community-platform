@@ -4,39 +4,56 @@
   <a href="/admin/directory?type=organization" class="filter-chip <%= selected === 'organization' ? 'active' : '' %>">
     Organizations (<%= organizationCount %>)
   </a>
-
-  <a href="/admin/directory?type=communityAdmin" class="filter-chip <%= selected === 'communityAdmin' ? 'active' : '' %>">
+  <a href="/admin/directory?type=communityAdmin"
+    class="filter-chip <%= selected === 'communityAdmin' ? 'active' : '' %>">
     Community Admins (<%= communityAdminCount %>)
   </a>
-
   <a href="/admin/directory?type=citizen" class="filter-chip <%= selected === 'citizen' ? 'active' : '' %>">
     Citizens (<%= citizenCount %>)
   </a>
 </div>
 
-<% if (directoryUsers.length === 0) { %>
+<% if (directoryUsers.length===0) { %>
   <p class="text-muted">No users found in this category.</p>
-<% } %>
-
-<% directoryUsers.forEach(user => { %>
-  <div class="directory-card d-flex justify-content-between align-items-center flex-wrap gap-3">
-    <div>
-      <div class="fw-bold mb-1"><%= user.organizationName || user.fullName %></div>
-      <div class="small text-muted mb-1"><%= user.email %></div>
-      <div class="small text-muted">
-        <%= user.location || "No location" %>
-        • Joined
-        <%= new Date(user.createdAt).toLocaleDateString("en-GB", {
-          day: "numeric",
-          month: "short",
-          year: "numeric"
-        }) %>
-      </div>
+  <% } else { %>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" style="font-size:13.5px;">
+        <thead class="table-light">
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Location</th>
+            <th>Joined</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% directoryUsers.forEach(function(u) { %>
+            <tr>
+              <td class="align-middle">
+                <a href="/admin/directory/<%= u._id %>" class="fw-semibold text-decoration-none" style="color:#04888D;">
+                  <%= u.communityName || u.organizationName || u.fullName %>
+                </a>
+              </td>
+              <td class="align-middle text-muted">
+                <%= u.email %>
+              </td>
+              <td class="align-middle text-muted">
+                <%= u.location || '—' %>
+                  <% if (u.homeLatitude && u.homeLongitude) { %>
+                    <a href="https://www.google.com/maps?q=<%= u.homeLatitude %>,<%= u.homeLongitude %>" target="_blank"
+                      class="ms-1 text-decoration-none" style="font-size:11.5px; color:#04888D;"
+                      title="View on Google Maps">
+                      <i class="bi bi-map"></i>
+                    </a>
+                    <% } %>
+              </td>
+              <td class="align-middle text-muted" style="white-space:nowrap;">
+                <%= new Date(u.createdAt).toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric" })
+                  %>
+              </td>
+            </tr>
+            <% }); %>
+        </tbody>
+      </table>
     </div>
-
-    <div class="d-flex gap-2">
-      <a href="/admin/directory/<%= user._id %>" class="btn btn-outline-primary btn-sm">View</a>
-      <button class="btn btn-outline-danger btn-sm" disabled>Disable</button>
-    </div>
-  </div>
-<% }) %>
+    <% } %>

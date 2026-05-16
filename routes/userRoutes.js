@@ -1,79 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const User = require("../models/User");
-const Post = require("../models/Post");
-const Follow = require("../models/Follow");
+const { isLoggedIn } = require("../middleware/authMiddleware");
+const userController = require("../controllers/userController");
 
-// profile page
-router.get("/:id", async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id);
-
-    if (!user) {
-      return res.send("User not found");
-    }
-
-    const posts = await Post.find({ author: user._id }).sort({ createdAt: -1 });
-
-    let isFollowing = false;
-
-    if (req.session.userId) {
-      const existingFollow = await Follow.findOne({
-        follower: req.session.userId,
-        following: user._id,
-      });
-
-      isFollowing = !!existingFollow;
-    }
-
-    let followerCount = 0;
-    let followingCount = 0;
-
-    // organizations/community admins can have followers
-    if (user.role === "organization" || user.role === "communityAdmin") {
-      followerCount = await Follow.countDocuments({
-        following: user._id,
-      });
-    }
-
-    // citizens and organizations/community admins can follow others
-    followingCount = await Follow.countDocuments({
-      follower: user._id,
-    });
-
-    let backUrl = null;
-
-    if (req.query.from === "following" || req.query.from === "followers") {
-      backUrl = "/following";
-    }
-
-    // For citizen profiles, fetch volunteer posts they have joined
-    let volunteerHistory = [];
-    if (user.role === "citizen") {
-      volunteerHistory = await Post.find({
-        "volunteers.user": user._id,
-        type: "volunteer"
-      }).populate("author").sort({ volunteerDate: -1 });
-    }
-
-    res.render("users/show", {
-      title: user.role === "communityAdmin"
-        ? (user.communityName || user.location + " Locals")
-        : (user.organizationName || user.fullName),
-      user,
-      posts,
-      isFollowing,
-      followerCount,
-      followingCount,
-      backUrl,
-      userId: req.session.userId,
-      role: req.session.role,
-      volunteerHistory,
-    });
-  } catch (err) {
-    console.log(err);
-    return res.send("Error loading profile");
-  }
-});
+router.get("/:id", isLoggedIn, userController.getUserProfile);
 
 module.exports = router;

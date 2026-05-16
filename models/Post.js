@@ -12,15 +12,15 @@ const postSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-images: [
-  {
-    url: String,
-    filename: String,
-  }
-],
+    images: [
+      {
+        url: String,
+        filename: String,
+      }
+    ],
     type: {
       type: String,
-      enum: ["event", "volunteer", "alert", "training", "communityUpdate"],
+      enum: ["event", "volunteer", "alert", "notice", "training", "communityUpdate"],
       required: true,
     },
 
@@ -30,19 +30,44 @@ images: [
       },
     ],
     likes: [
-  {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-  }
-],
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      }
+    ],
 
     author: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
+
+    // Volunteer-specific fields
+    volunteerDate: { type: Date },
+    maxVolunteers: { type: Number, default: 0 },
+    volunteers: [
+      {
+        user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        fullName: { type: String, trim: true },
+        phone: { type: String, trim: true },
+        note: { type: String, trim: true, default: "" },
+        joinedAt: { type: Date, default: Date.now },
+        attended: { type: Boolean, default: false },
+        status: { type: String, enum: ["pending", "rejected", "attended"], default: "pending" },
+        rejectionReason: { type: String, default: "" },
+      }
+    ],
+
+    // Alert-specific location fields
+    locationName: { type: String, default: "" },
+    latitude: { type: Number, default: null },
+    longitude: { type: Number, default: null },
+    alertCategory: { type: String, enum: ["", "Safety", "Outage", "Weather", "Fire", "Traffic"], default: "" },
+    alertRadius: { type: String, enum: ["", "500m", "1km", "2km", "5km"], default: "" },
+    alertStatus: { type: String, enum: ["Active", "Resolved"], default: "Active" },
+    resolvedAt: { type: Date, default: null },
   },
-  
+
   { timestamps: true }
 );
 

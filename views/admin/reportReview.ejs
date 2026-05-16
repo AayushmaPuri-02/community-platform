@@ -1,0 +1,300 @@
+<div class="py-4 px-2">
+
+    <a href="/admin/reports" class="btn btn-outline-secondary btn-sm mb-4">
+        ← Back to Reports
+    </a>
+
+    <% var reasonLabels={}; %>
+        <% reasonLabels.spam="Spam" ; %>
+            <% reasonLabels.misinformation="Misinformation" ; %>
+                <% reasonLabels.harassment="Harassment" ; %>
+                    <% reasonLabels.hate_speech="Hate Speech" ; %>
+                        <% reasonLabels.scam_fraud="Scam / Fraud" ; %>
+                            <% reasonLabels.inappropriate="Inappropriate Content" ; %>
+                                <% var reviewBase="/admin/reports/post/" + post._id; %>
+                                    <% var anyWarningSent=false; %>
+                                        <% for (var ri=0; ri < reports.length; ri++) { if
+                                            (reports[ri].warningSent===true) { anyWarningSent=true; break; } } %>
+                                            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                                                <div class="card-body p-4">
+
+                                                    <!-- Status badges + warn action -->
+                                                    <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                                                        <% if (anyWarningSent) { %>
+                                                            <span class="badge bg-success rounded-pill px-2"
+                                                                style="font-size:0.75rem;">
+                                                                <i class="bi bi-check-circle me-1"></i>Warning Sent
+                                                            </span>
+                                                            <% } else { %>
+                                                                <span
+                                                                    class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle rounded-pill px-2"
+                                                                    style="font-size:0.75rem;">Under Review</span>
+                                                                <% } %>
+                                                                    <span
+                                                                        class="badge bg-light text-dark border text-capitalize"
+                                                                        style="font-size:0.75rem;">
+                                                                        <%= post.type %>
+                                                                    </span>
+
+                                                                    <!-- Warn button — top level, near post author -->
+                                                                    <% if (!anyWarningSent) { %>
+                                                                        <% var firstReportId=reports[0] ? reports[0]._id
+                                                                            : '' ; %>
+                                                                            <button type="button"
+                                                                                class="btn btn-sm btn-warning rounded-pill px-3 ms-auto warn-btn"
+                                                                                data-report-id="<%= firstReportId %>"
+                                                                                data-post-title="<%= post.title %>"
+                                                                                data-bs-toggle="modal"
+                                                                                data-bs-target="#warnModal"
+                                                                                style="font-size:12px;">
+                                                                                <i
+                                                                                    class="bi bi-envelope-exclamation me-1"></i>Send
+                                                                                Warning to Post
+                                                                                Author
+                                                                            </button>
+                                                                            <% } %>
+                                                    </div>
+
+                                                    <h2 class="fw-bold mt-2 mb-1"
+                                                        style="color:#04888D; font-size:1.5rem;">
+                                                        <%= post.title %>
+                                                    </h2>
+
+                                                    <p class="text-muted small mb-3">
+                                                        Posted by
+                                                        <a href="/admin/reports/user/<%= post.author._id %>?from=<%= encodeURIComponent(reviewBase) %>"
+                                                            class="text-decoration-none fw-semibold"
+                                                            style="color:#04888D;">
+                                                            <%= post.author.communityName ||
+                                                                post.author.organizationName || post.author.fullName %>
+                                                        </a>
+                                                        &middot;
+                                                        <%= post.createdAt.toLocaleDateString('en-GB', { day:'numeric',
+                                                            month:'long', year:'numeric' }) %>
+                                                    </p>
+
+                                                    <% if (post.images && post.images.length> 0) { %>
+                                                        <div class="row g-2 mb-3">
+                                                            <% post.images.forEach(function(img) { %>
+                                                                <div
+                                                                    class="<%= post.images.length === 1 ? 'col-12' : 'col-md-6' %>">
+                                                                    <img src="<%= img.url %>" class="w-100 rounded-3"
+                                                                        style="height:220px; object-fit:cover;"
+                                                                        alt="Post image">
+                                                                </div>
+                                                                <% }); %>
+                                                        </div>
+                                                        <% } %>
+
+                                                            <div class="text-secondary"
+                                                                style="line-height:1.8; font-size:0.97rem; white-space:pre-line;">
+                                                                <%= post.description %>
+                                                            </div>
+
+                                                            <% if (post.tags && post.tags.length> 0) { %>
+                                                                <div class="mt-3">
+                                                                    <% post.tags.forEach(function(tag) { %>
+                                                                        <span
+                                                                            class="badge bg-light text-primary border rounded-pill me-1">#
+                                                                            <%= tag %>
+                                                                        </span>
+                                                                        <% }); %>
+                                                                </div>
+                                                                <% } %>
+
+                                                </div>
+                                            </div>
+
+                                            <!-- REPORTS FOR THIS POST -->
+                                            <h6 class="fw-bold text-muted mb-3">
+                                                <i class="bi bi-flag me-2"></i>Reports (<%= reports.length %>)
+                                            </h6>
+
+                                            <% reports.forEach(function(report) { %>
+                                                <div class="card border-0 shadow-sm rounded-4 mb-3">
+                                                    <div class="card-body p-4">
+
+                                                        <div
+                                                            class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                                                            <div>
+                                                                <span
+                                                                    class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle rounded-pill px-2 me-2">
+                                                                    <%= reasonLabels[report.reason] || report.reason %>
+                                                                </span>
+                                                                <span class="text-muted small">
+                                                                    Reported on
+                                                                    <%= report.createdAt.toLocaleDateString('en-GB', {
+                                                                        day:'numeric', month:'long', year:'numeric' })
+                                                                        %>
+                                                                </span>
+                                                            </div>
+                                                            <div class="d-flex align-items-center gap-2">
+                                                                <% if (report.warningSent) { %>
+                                                                    <!-- Remove reviewed report -->
+                                                                    <button type="button"
+                                                                        class="btn btn-sm btn-outline-danger rounded-pill px-3"
+                                                                        style="font-size:11px;" data-bs-toggle="modal"
+                                                                        data-bs-target="#deleteReportModal-<%= report._id %>">
+                                                                        <i class="bi bi-trash me-1"></i>Remove Record
+                                                                    </button>
+                                                                    <% } %>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="mb-2">
+                                                            <span class="text-muted small d-block mb-1">Reported
+                                                                by</span>
+                                                            <% if (report.reportedBy) { %>
+                                                                <a href="/admin/reports/user/<%= report.reportedBy._id %>?from=<%= encodeURIComponent(reviewBase) %>"
+                                                                    class="text-decoration-none fw-semibold"
+                                                                    style="color:#04888D;">
+                                                                    <%= report.reportedBy.communityName ||
+                                                                        report.reportedBy.organizationName ||
+                                                                        report.reportedBy.fullName %>
+                                                                </a>
+                                                                <% } else { %>
+                                                                    <span class="text-muted">Unknown</span>
+                                                                    <% } %>
+                                                        </div>
+
+                                                        <% if (report.note) { %>
+                                                            <div class="mt-2 p-2 bg-light rounded-3"
+                                                                style="font-size:0.9rem;">
+                                                                <strong>Note:</strong>
+                                                                <%= report.note %>
+                                                            </div>
+                                                            <% } %>
+
+                                                    </div>
+                                                </div>
+
+                                                <!-- Delete confirmation modal for this report -->
+                                                <% if (report.warningSent) { %>
+                                                    <div class="modal fade" id="deleteReportModal-<%= report._id %>"
+                                                        tabindex="-1" aria-hidden="true">
+                                                        <div class="modal-dialog modal-dialog-centered">
+                                                            <div class="modal-content border-0 rounded-4 shadow">
+                                                                <div class="modal-header border-0 pb-0">
+                                                                    <h5 class="modal-title fw-bold text-danger">
+                                                                        <i class="bi bi-trash me-2"></i>Remove Report
+                                                                        Record
+                                                                    </h5>
+                                                                    <button type="button" class="btn-close"
+                                                                        data-bs-dismiss="modal"></button>
+                                                                </div>
+                                                                <div class="modal-body pt-2">
+                                                                    <p class="mb-1">This will remove the report record
+                                                                        from the admin list.</p>
+                                                                    <p class="text-muted small mb-0">
+                                                                        The post, the user account, and the warning
+                                                                        history will
+                                                                        <strong>not</strong> be
+                                                                        affected.
+                                                                    </p>
+                                                                </div>
+                                                                <div class="modal-footer border-0">
+                                                                    <button type="button"
+                                                                        class="btn btn-light rounded-pill px-4"
+                                                                        data-bs-dismiss="modal">Cancel</button>
+                                                                    <form
+                                                                        action="/admin/reports/<%= report._id %>/delete"
+                                                                        method="POST" class="m-0">
+                                                                        <button type="submit"
+                                                                            class="btn btn-danger rounded-pill px-4">Remove</button>
+                                                                    </form>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <% } %>
+
+                                                        <% }); %>
+
+</div>
+
+<!-- WARN MODAL -->
+<div class="modal fade" id="warnModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-envelope-exclamation me-2 text-warning"></i>Send Warning Email
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="warnForm" method="POST" action="/admin/reports/<%= reports[0] ? reports[0]._id : '' %>/warn">
+                <div class="modal-body">
+                    <p class="text-muted small mb-1">
+                        Sending warning to post author: <strong>
+                            <%= post.author.communityName || post.author.organizationName || post.author.fullName %>
+                        </strong>
+                    </p>
+                    <p class="text-muted small mb-1">
+                        Post: <strong id="warnPostTitle"></strong>
+                    </p>
+                    <p class="text-muted small mb-3">Write a clear message. Maximum 50 words.</p>
+                    <div class="mb-1">
+                        <label class="form-label fw-semibold">
+                            Warning Message <span class="text-danger">*</span>
+                        </label>
+                        <textarea id="warnMessage" name="message" class="form-control" rows="5"
+                            placeholder="Explain why this post was flagged and what action is expected…"
+                            required></textarea>
+                        <div class="d-flex justify-content-end mt-1">
+                            <small id="warnWordCount" class="text-muted">0 / 50 words</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4"
+                        data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" id="warnSubmitBtn" class="btn btn-warning rounded-pill px-4 fw-semibold">
+                        Send Warning
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        var textarea = document.getElementById('warnMessage');
+        var counter = document.getElementById('warnWordCount');
+        var submitBtn = document.getElementById('warnSubmitBtn');
+
+        function countWords(str) {
+            return str.trim() === '' ? 0 : str.trim().split(/\s+/).length;
+        }
+
+        function updateCounter() {
+            var count = countWords(textarea.value);
+            counter.textContent = count + ' / 50 words';
+            if (count > 50) {
+                counter.classList.add('text-danger');
+                counter.classList.remove('text-muted');
+                submitBtn.disabled = true;
+            } else {
+                counter.classList.remove('text-danger');
+                counter.classList.add('text-muted');
+                submitBtn.disabled = false;
+            }
+        }
+
+        textarea.addEventListener('input', updateCounter);
+
+        document.querySelectorAll('.warn-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                document.getElementById('warnForm').action =
+                    '/admin/reports/' + btn.getAttribute('data-report-id') + '/warn';
+                document.getElementById('warnPostTitle').textContent =
+                    btn.getAttribute('data-post-title');
+                textarea.value = '';
+                counter.textContent = '0 / 50 words';
+                counter.classList.remove('text-danger');
+                counter.classList.add('text-muted');
+                submitBtn.disabled = false;
+            });
+        });
+    })();
+</script>

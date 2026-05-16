@@ -9,42 +9,38 @@
 
       <div class="card shadow-sm border-0">
         <div class="card-body p-4">
-          <form id="createPostForm" action="/posts" method="POST" enctype="multipart/form-data" >
+          <form id="createPostForm" action="/posts" method="POST" enctype="multipart/form-data">
 
             <div class="mb-3">
               <label for="title" class="form-label fw-bold">Title</label>
-              <input
-                type="text"
-                id="title"
-                name="title"
-                class="form-control"
-                placeholder="Enter post title"
-                required
-              >
-              <div class="form-text">
-                Maximum 30 words.
+              <input type="text" id="title" name="title" class="form-control" placeholder="Enter post title" required
+                value="<%= typeof formData !== 'undefined' ? (formData.title || '') : '' %>">
+              <div class="d-flex justify-content-between mt-1">
+                <span class="form-text">Maximum 20 words.</span>
+                <span class="form-text" id="titleWordCount">0 / 20 words</span>
               </div>
-              <div class="invalid-feedback" id="titleError">
-                Title must not exceed 30 words.
-              </div>
+              <div class="invalid-feedback">Title must not exceed 20 words.</div>
             </div>
 
             <div class="mb-3">
               <label for="description" class="form-label fw-bold">Description</label>
-              <textarea
-                id="description"
-                name="description"
-                class="form-control"
-                rows="5"
+              <div class="mb-1 d-flex gap-1" id="descToolbar">
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="mdWrap('description','**','**')"
+                  title="Bold"><b>B</b></button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="mdWrap('description','*','*')"
+                  title="Italic"><i>I</i></button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="mdPrefix('description','- ')"
+                  title="Bullet list"><i class="bi bi-list-ul"></i></button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="mdPrefix('description','1. ')"
+                  title="Numbered list"><i class="bi bi-list-ol"></i></button>
+              </div>
+              <textarea id="description" name="description" class="form-control" rows="5"
                 placeholder="What's on your mind?"
-                required
-              ></textarea>
-              <div class="form-text">
-                Maximum 200 words.
+                required><%= typeof formData !== 'undefined' ? (formData.description || '') : '' %></textarea>
+              <div class="d-flex justify-content-end mt-1">
+                <span class="form-text" id="descWordCount">0 / 300 words</span>
               </div>
-              <div class="invalid-feedback" id="descriptionError">
-                Description must not exceed 200 words.
-              </div>
+              <div class="invalid-feedback">Description must not exceed 300 words.</div>
             </div>
 
             <div class="row">
@@ -52,43 +48,138 @@
                 <label for="type" class="form-label fw-bold">Type</label>
                 <select id="type" name="type" class="form-select" required>
                   <option value="" selected disabled>Choose a category...</option>
-                  <option value="event">Event</option>
-                  <option value="volunteer">Volunteer</option>
-                  <option value="alert">Alert</option>
-                  <option value="training">Training</option>
-                  <option value="communityUpdate">Community Update</option>
+                  <% var orgTypes=['event','volunteer','notice','training']; %>
+                    <% var adminTypes=['alert','notice','event','volunteer','communityUpdate']; %>
+                      <% var allowedForRole=userRole==='organization' ? orgTypes : (userRole==='communityAdmin' ?
+                        adminTypes : []); %>
+                        <% var allTypes=[ { value: 'event' , label: 'Event' }, { value: 'volunteer' , label: 'Volunteer'
+                          }, { value: 'alert' , label: 'Alert' }, { value: 'notice' , label: 'Notice' }, {
+                          value: 'training' , label: 'Training' }, { value: 'communityUpdate' ,
+                          label: 'Community Update' }, ]; %>
+                          <% allTypes.forEach(function(t) { %>
+                            <% if (allowedForRole.includes(t.value)) { %>
+                              <option value="<%= t.value %>" <%=(typeof formData !=='undefined' &&
+                                formData.type===t.value) ? 'selected' : '' %>>
+                                <%= t.label %>
+                              </option>
+                              <% } %>
+                                <% }); %>
                 </select>
               </div>
 
               <div class="col-md-6 mb-3">
                 <label for="tags" class="form-label fw-bold">Tags</label>
-                <input
-                  type="text"
-                  id="tags"
-                  name="tags"
-                  class="form-control"
-                  placeholder="e.g. news, help, urgent"
-                >
+                <input type="text" id="tags" name="tags" class="form-control" placeholder="e.g. news, help, urgent"
+                  value="<%= typeof formData !== 'undefined' ? (formData.tags || '') : '' %>">
                 <div class="form-text">Separate tags with commas.</div>
               </div>
             </div>
 
+            <!-- Volunteer fields — shown only when type = volunteer -->
+            <div id="volunteerFields" style="display:none;">
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label for="volunteerDate" class="form-label fw-bold">Volunteer Date</label>
+                  <input type="date" id="volunteerDate" name="volunteerDate" class="form-control">
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label for="maxVolunteers" class="form-label fw-bold">Max Volunteers</label>
+                  <input type="number" id="maxVolunteers" name="maxVolunteers" class="form-control" min="1"
+                    placeholder="e.g. 20">
+                  <div class="form-text">Leave blank or 0 for unlimited.</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Alert location fields — shown only when type = alert -->
+            <div id="alertLocationFields" style="display:none;">
+
+              <!-- Alert Category -->
+              <div class="mb-3">
+                <label for="alertCategory" class="form-label fw-bold">Alert Category</label>
+                <select id="alertCategory" name="alertCategory" class="form-select">
+                  <option value="">— Select category —</option>
+                  <option value="Safety" <%=(typeof formData !=='undefined' && formData.alertCategory==='Safety' )
+                    ? 'selected' : '' %>>Safety</option>
+                  <option value="Outage" <%=(typeof formData !=='undefined' && formData.alertCategory==='Outage' )
+                    ? 'selected' : '' %>>Outage</option>
+                  <option value="Weather" <%=(typeof formData !=='undefined' && formData.alertCategory==='Weather' )
+                    ? 'selected' : '' %>>Weather</option>
+                  <option value="Fire" <%=(typeof formData !=='undefined' && formData.alertCategory==='Fire' )
+                    ? 'selected' : '' %>>Fire</option>
+                  <option value="Traffic" <%=(typeof formData !=='undefined' && formData.alertCategory==='Traffic' )
+                    ? 'selected' : '' %>>Traffic</option>
+                </select>
+              </div>
+
+              <!-- Alert Location (Google Maps) -->
+              <div class="mb-3">
+                <label class="form-label fw-bold">Alert Location</label>
+                <div class="d-flex gap-2 mb-2">
+                  <input type="text" id="alertLocationInput" class="form-control"
+                    placeholder="Search a place (e.g. Kalanki Chowk, Kathmandu)"
+                    value="<%= typeof formData !== 'undefined' ? (formData.locationName || '') : '' %>">
+                  <button type="button" id="alertSearchBtn" class="btn btn-outline-secondary px-3">
+                    Search
+                  </button>
+                </div>
+                <div class="form-text mb-2">After searching, click anywhere on the map to pin the exact alert spot.
+                </div>
+                <div id="alertGoogleMap"
+                  style="height:280px; border-radius:10px; border:1px solid #dee2e6; display:none;"></div>
+                <div id="alertLocationLabel" class="text-success small mt-2" style="display:none;"></div>
+                <div id="alertLocationError" class="text-danger small mt-1" style="display:none;">
+                  Please search and pin a location before submitting.
+                </div>
+                <% if (typeof fieldErrors !=='undefined' && fieldErrors.location) { %>
+                  <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>
+                    <%= fieldErrors.location %>
+                  </div>
+                  <% } %>
+              </div>
+
+              <!-- Hidden fields -->
+              <input type="hidden" id="locationNameInput" name="locationName"
+                value="<%= typeof formData !== 'undefined' ? (formData.locationName || '') : '' %>">
+              <input type="hidden" id="latitudeInput" name="latitude"
+                value="<%= typeof formData !== 'undefined' ? (formData.latitude || '') : '' %>">
+              <input type="hidden" id="longitudeInput" name="longitude"
+                value="<%= typeof formData !== 'undefined' ? (formData.longitude || '') : '' %>">
+
+              <!-- Affected Radius -->
+              <div class="mb-3">
+                <label for="alertRadius" class="form-label fw-bold">Affected Radius</label>
+                <select id="alertRadius" name="alertRadius"
+                  class="form-select <%= (typeof fieldErrors !== 'undefined' && fieldErrors.radius) ? 'is-invalid' : '' %>">
+                  <option value="">— Select radius —</option>
+                  <option value="500m" <%=(typeof formData !=='undefined' && formData.alertRadius==='500m' )
+                    ? 'selected' : '' %>>500 m</option>
+                  <option value="1km" <%=(typeof formData !=='undefined' && formData.alertRadius==='1km' ) ? 'selected'
+                    : '' %>>1 km</option>
+                  <option value="2km" <%=(typeof formData !=='undefined' && formData.alertRadius==='2km' ) ? 'selected'
+                    : '' %>>2 km</option>
+                  <option value="5km" <%=(typeof formData !=='undefined' && formData.alertRadius==='5km' ) ? 'selected'
+                    : '' %>>5 km</option>
+                </select>
+                <% if (typeof fieldErrors !=='undefined' && fieldErrors.radius) { %>
+                  <div class="text-danger small mt-1"><i class="bi bi-exclamation-circle me-1"></i>
+                    <%= fieldErrors.radius %>
+                  </div>
+                  <% } %>
+              </div>
+
+            </div>
+
             <div class="mb-3">
               <label for="postImages" class="form-label fw-bold">Upload Images</label>
-              <input
-                type="file"
-                id="postImages"
-                name="postImages"
-                class="form-control"
-                multiple
-                accept=".jpg,.jpeg,.png,image/jpeg,image/png"
-              >
+              <input type="file" id="postImages" name="postImages" class="form-control" multiple
+                accept=".jpg,.jpeg,.png,image/jpeg,image/png">
               <div class="form-text">
-  You can upload up to 4 images. Allowed formats: JPG, JPEG, PNG. Maximum size: 1.5 MB per image.
-</div>
-<div class="invalid-feedback" id="postImagesError">
-  Only JPG, JPEG, and PNG images under 1.5 MB are allowed.Maximum 4 images.
-</div>
+                You can upload up to 4 images. Allowed formats: JPG, JPEG, PNG. Maximum size: 1.5 MB per image.
+              </div>
+              <div class="invalid-feedback" id="postImagesError">
+                Only JPG, JPEG, and PNG images under 1.5 MB are allowed.Maximum 4 images.
+              </div>
             </div>
             <div class="d-grid gap-2 d-md-flex justify-content-md-end">
               <button type="submit" class="btn btn-primary px-4">Create Post</button>
@@ -103,76 +194,155 @@
 
 <script>
   function countWords(text) {
-    return text.trim().split(/\s+/).filter(Boolean).length;
+    return text.trim() === '' ? 0 : text.trim().split(/\s+/).filter(Boolean).length;
   }
 
-  const form = document.getElementById("createPostForm");
-  const titleInput = document.getElementById("title");
-  const descriptionInput = document.getElementById("description");
-  const postImagesInput = document.getElementById("postImages");
+  var form = document.getElementById("createPostForm");
+  var titleInput = document.getElementById("title");
+  var descriptionInput = document.getElementById("description");
+  var postImagesInput = document.getElementById("postImages");
+  var titleWordCount = document.getElementById("titleWordCount");
+  var descWordCount = document.getElementById("descWordCount");
 
   function validateTitle() {
-    const titleWords = countWords(titleInput.value);
-
-    if (titleWords > 30) {
+    var words = countWords(titleInput.value);
+    titleWordCount.textContent = words + ' / 20 words';
+    if (words > 20) {
       titleInput.classList.add("is-invalid");
+      titleWordCount.style.color = '#dc3545';
       return false;
-    } else {
-      titleInput.classList.remove("is-invalid");
-      return true;
     }
+    titleInput.classList.remove("is-invalid");
+    titleWordCount.style.color = '';
+    return true;
   }
 
   function validateDescription() {
-    const descriptionWords = countWords(descriptionInput.value);
-
-    if (descriptionWords > 200) {
+    var words = countWords(descriptionInput.value);
+    descWordCount.textContent = words + ' / 300 words';
+    if (words > 300) {
       descriptionInput.classList.add("is-invalid");
+      descWordCount.style.color = '#dc3545';
       return false;
-    } else {
-      descriptionInput.classList.remove("is-invalid");
-      return true;
     }
+    descriptionInput.classList.remove("is-invalid");
+    descWordCount.style.color = '';
+    return true;
   }
 
   function validateImages() {
-    const files = postImagesInput.files;
-    const allowedTypes = ["image/jpeg", "image/png", "image/jpg"];
-    const maxSize = 1.5 * 1024 * 1024;
-
-    let valid = true;
-
-    if (files.length > 4) {
-      valid = false;
+    var files = postImagesInput.files;
+    var allowedTypes = ["image/jpeg", "image/png", "image/jpg"];
+    var maxSize = 1.5 * 1024 * 1024;
+    var valid = true;
+    if (files.length > 4) valid = false;
+    for (var i = 0; i < files.length; i++) {
+      if (!allowedTypes.includes(files[i].type) || files[i].size > maxSize) { valid = false; break; }
     }
-
-    for (const file of files) {
-      if (!allowedTypes.includes(file.type) || file.size > maxSize) {
-        valid = false;
-        break;
-      }
-    }
-
-    if (!valid) {
-      postImagesInput.classList.add("is-invalid");
-      return false;
-    } else {
-      postImagesInput.classList.remove("is-invalid");
-      return true;
-    }
+    if (!valid) { postImagesInput.classList.add("is-invalid"); return false; }
+    postImagesInput.classList.remove("is-invalid");
+    return true;
   }
 
   titleInput.addEventListener("input", validateTitle);
   descriptionInput.addEventListener("input", validateDescription);
   postImagesInput.addEventListener("change", validateImages);
 
-  form.addEventListener("submit", function (e) {
-    const isTitleValid = validateTitle();
-    const isDescriptionValid = validateDescription();
-    const areImagesValid = validateImages();
+  // Show/hide volunteer fields
+  var typeSelect = document.getElementById("type");
+  var volunteerFields = document.getElementById("volunteerFields");
+  var alertLocationFields = document.getElementById("alertLocationFields");
 
-    if (!isTitleValid || !isDescriptionValid || !areImagesValid) {
-      e.preventDefault();
+  function toggleTypeFields() {
+    volunteerFields.style.display = typeSelect.value === "volunteer" ? "block" : "none";
+    alertLocationFields.style.display = typeSelect.value === "alert" ? "block" : "none";
+  }
+  typeSelect.addEventListener("change", toggleTypeFields);
+  toggleTypeFields();
+
+  form.addEventListener("submit", function (e) {
+    if (!validateTitle() || !validateDescription() || !validateImages()) e.preventDefault();
+
+    // Require location for alert posts
+    if (typeSelect.value === "alert") {
+      var lat = document.getElementById("latitudeInput").value;
+      var lng = document.getElementById("longitudeInput").value;
+      if (!lat || !lng) {
+        e.preventDefault();
+        var errEl = document.getElementById("alertLocationError");
+        errEl.style.display = "block";
+        document.getElementById("alertLocationInput").focus();
+      }
     }
   });
+
+  // ── Google Maps alert location ────────────────────────────────────────────
+  var mapsLoaded = false;
+
+  function loadGoogleMaps() {
+    if (mapsLoaded) return;
+    mapsLoaded = true;
+    var script = document.createElement('script');
+    script.src = 'https://maps.googleapis.com/maps/api/js?key=<%= googleMapsApiKey %>&callback=initAlertMapCallback&loading=async';
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+  }
+
+  window.initAlertMapCallback = function () {
+    if (document.getElementById('alertLocationFields').style.display !== 'none') {
+      initAlertLocationPicker(0, 0);
+    }
+  };
+
+  typeSelect.addEventListener('change', function () {
+    if (typeSelect.value === 'alert') {
+      loadGoogleMaps();
+      if (mapsLoaded && typeof google !== 'undefined' && typeof initAlertLocationPicker === 'function') {
+        initAlertLocationPicker(0, 0);
+      }
+    }
+  });
+
+</script>
+<script src="/js/alertLocationPicker.js"></script>
+
+<script>
+  function mdWrap(id, before, after) {
+    var ta = document.getElementById(id);
+    var start = ta.selectionStart;
+    var end = ta.selectionEnd;
+    var selected = ta.value.substring(start, end);
+    var replacement = before + (selected || 'text') + after;
+    ta.value = ta.value.substring(0, start) + replacement + ta.value.substring(end);
+    ta.selectionStart = start + before.length;
+    ta.selectionEnd = start + before.length + (selected || 'text').length;
+    ta.focus();
+  }
+
+  function mdPrefix(id, prefix) {
+    var ta = document.getElementById(id);
+    var start = ta.selectionStart;
+    var end = ta.selectionEnd;
+    var selected = ta.value.substring(start, end);
+
+    if (selected.length > 0) {
+      // Multi-line: prefix every line
+      var lines = selected.split('\n');
+      var isNumbered = /^\d+\. $/.test(prefix);
+      var replaced = lines.map(function (line, i) {
+        if (isNumbered) return (i + 1) + '. ' + line;
+        return prefix + line;
+      }).join('\n');
+      ta.value = ta.value.substring(0, start) + replaced + ta.value.substring(end);
+      ta.selectionStart = start;
+      ta.selectionEnd = start + replaced.length;
+    } else {
+      // No selection: prefix current line
+      var lineStart = ta.value.lastIndexOf('\n', start - 1) + 1;
+      ta.value = ta.value.substring(0, lineStart) + prefix + ta.value.substring(lineStart);
+      ta.selectionStart = ta.selectionEnd = start + prefix.length;
+    }
+    ta.focus();
+  }
 </script>

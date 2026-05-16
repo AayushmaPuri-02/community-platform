@@ -1,159 +1,390 @@
 <style>
-@keyframes pop {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.4); }
-  100% { transform: scale(1); }
-}
+  @keyframes pop {
+    0% {
+      transform: scale(1);
+    }
 
-.animate-pop {
-  animation: pop 0.3s ease-out;
-}
+    50% {
+      transform: scale(1.4);
+    }
 
-/* Ensure the icon can scale without moving other text */
-.like-btn i, .save-btn i {
-  display: inline-block;
-  transition: color 0.2s ease;
-}
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  .animate-pop {
+    animation: pop 0.3s ease-out;
+  }
+
+  .like-btn i,
+  .save-btn i {
+    display: inline-block;
+    transition: color 0.2s ease;
+  }
+
+  .post-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #e2e8f0;
+    flex-shrink: 0;
+  }
+
+  .recent-post-item {
+    display: block;
+    padding: 9px 0;
+    border-bottom: 1px solid #f1f5f9;
+    text-decoration: none;
+    color: #1e293b;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .recent-post-item:last-child {
+    border-bottom: none;
+  }
+
+  .recent-post-item:hover {
+    color: #04888D;
+  }
+
+  .recent-post-item .rp-meta {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 2px;
+  }
 </style>
-<h2>Posts</h2>
 
-<% if (posts.length === 0) { %>
-  <p>No posts yet.</p>
-<% } %>
+<% /* Relative time helper — used inline per post */ function relativeTime(date) { var diff=Date.now() - new
+  Date(date).getTime(); var mins=Math.floor(diff / 60000); var hours=Math.floor(diff / 3600000); var
+  days=Math.floor(diff / 86400000); if (mins < 1) return 'just now' ; if (mins < 60) return mins + ' min ago' ; if
+  (hours < 24) return hours + ' hour' + (hours===1 ? '' : 's' ) + ' ago' ; return new
+  Date(date).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }); } var badgeMap={
+  alert: 'bg-danger' , volunteer: 'bg-success' , event: 'bg-primary' , notice: 'bg-secondary' , training: 'bg-info' ,
+  communityUpdate: 'bg-warning text-dark' }; function badgeClass(type) { return badgeMap[type] || 'bg-secondary' ; }
+  function badgeLabel(type) { return type==='communityUpdate' ? 'Update' : type.charAt(0).toUpperCase() + type.slice(1);
+  } %>
 
-<% posts.forEach(post => { %>
-  <div class="card mb-4 border shadow-sm rounded-4 overflow-hidden bg-white">
-    <div class="card-body p-4">
+  <div class="row g-0">
 
-      <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
-        <h5 class="fw-bold mb-0">
-          <a href="/posts/<%= post._id %>" class="text-decoration-none" style="color: #04888D;">
-            <%= post.title %>
-          </a>
-        </h5>
-     <small class="text-muted fw-light">
-  <%= post.createdAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) %>
-</small>
-      </div>
+    <!-- MAIN FEED: col-lg-7 -->
+    <div class="col-lg-7 pe-lg-4">
 
-      
-      <% if (post.images && post.images.length > 0) { %>
-  <div class="row g-2 mb-3">
-    <% post.images.forEach(img => { %>
-      <div class="<%= post.images.length === 1 ? 'col-12' : post.images.length === 2 ? 'col-md-6' : post.images.length === 3 ? 'col-md-4' : 'col-md-3' %>">
-        <img 
-          src="<%= img.url %>" 
-          class="rounded-3 border w-100"
-          style="height: 250px; object-fit: cover;"
-          alt="Post image">
-      </div>
-    <% }) %>
-  </div>
-<% } %>
-      <div class="text-secondary mb-3" style="line-height: 1.6; font-size: 0.95rem; white-space: pre-line;">
-  <%= post.description %>
-</div>
+      <% if (posts.length===0) { %>
+        <p class="text-muted" style="font-size:0.92rem;">No posts yet.</p>
+        <% } %>
 
-      <div class="mb-4">
-        <% post.tags.forEach(tag => { %>
-          <span class="badge bg-light text-primary border rounded-pill me-2">#<%= tag %></span>
-        <% }) %>
-      </div>
+          <% posts.forEach(function(post) { var PREVIEW_LIMIT=200; var desc=post.description || '' ; var
+            isLong=desc.length> PREVIEW_LIMIT;
+            var preview = isLong ? desc.slice(0, PREVIEW_LIMIT).trimEnd() + '…' : desc;
+            var authorName = post.author ? (post.author.communityName || post.author.organizationName ||
+            post.author.fullName) : 'Unknown';
+            var authorAvatar = (post.author && post.author.profileImage) ? post.author.profileImage :
+            '/images/default-avatar.png';
+            var isLiked = userId && post.likes.some(function(id) { return id.toString() === userId.toString(); });
+            var isSaved = userSavedPosts && userSavedPosts.some(function(id) { return id.toString() ===
+            post._id.toString(); });
+            %>
+            <div class="card mb-3 border-0 shadow-sm rounded-4 bg-white overflow-hidden">
+              <div class="card-body p-4">
 
-      <div class="d-flex justify-content-between align-items-center pt-3 border-top">
-        <div class="text-muted small d-flex align-items-center gap-4">
-          <% const liked = userId && post.likes.some(id => id.toString() === userId.toString()); %>
-          <div class="like-btn" data-id="<%= post._id %>" style="cursor: pointer;">
-            <i class="bi <%= liked ? 'bi-heart-fill text-danger' : 'bi-heart' %>"></i> 
-            <span class="like-count ms-1"><%= post.likes.length %></span>
-          </div>
+                <!-- Card header: avatar + author + time -->
+                <div class="d-flex align-items-center gap-2 mb-2">
+                  <a href="/users/<%= post.author ? post.author._id : '#' %>">
+                    <img src="<%= authorAvatar %>" alt="<%= authorName %>" class="post-avatar">
+                  </a>
+                  <div class="flex-grow-1 min-width-0">
+                    <div>
+                      <a href="/users/<%= post.author ? post.author._id : '#' %>"
+                        class="fw-semibold text-dark text-decoration-none" style="font-size:13.5px;">
+                        <%= authorName %>
+                      </a>
+                    </div>
+                    <div class="text-muted" style="font-size:11.5px;">
+                      <%= relativeTime(post.createdAt) %>
+                    </div>
+                  </div>
+                </div>
 
-          <% const isSaved = userSavedPosts && userSavedPosts.some(id => id.toString() === post._id.toString()); %>
-          <div class="save-btn" data-id="<%= post._id %>" style="cursor: pointer;">
-            <i class="bi <%= isSaved ? 'bi-bookmark-fill text-warning' : 'bi-bookmark' %>"></i>
-          </div>
+                <!-- Title -->
+                <h5 class="fw-bold mb-2" style="font-size:1rem;">
+                  <a href="/posts/<%= post._id %>" class="text-decoration-none" style="color:#04888D;">
+                    <%= post.title %>
+                  </a>
+                </h5>
 
-          <a href="/posts/<%= post._id %>" class="text-decoration-none text-muted">
-            <i class="bi bi-chat-dots"></i> <%= post.commentCount %>
-          </a>
-        </div>
+                <!-- Images -->
+                <% if (post.images && post.images.length> 0) { %>
+                  <% if (post.images.length===1) { %>
+                    <div class="mb-3">
+                      <img src="<%= post.images[0].url %>" class="rounded-3 w-100"
+                        style="height:280px; object-fit:cover;" alt="Post image">
+                    </div>
+                    <% } else { %>
+                      <div id="carousel-<%= post._id %>" class="carousel slide mb-3" data-bs-ride="false"
+                        data-bs-wrap="false">
+                        <div class="carousel-inner rounded-3" style="height:280px;">
+                          <% post.images.forEach(function(img, idx) { %>
+                            <div class="carousel-item <%= idx === 0 ? 'active' : '' %>">
+                              <img src="<%= img.url %>" class="d-block w-100 rounded-3"
+                                style="height:280px; object-fit:contain; background:#f1f3f5;"
+                                alt="Post image <%= idx + 1 %>">
+                            </div>
+                            <% }); %>
+                        </div>
+                        <button class="carousel-control-prev d-none" type="button"
+                          data-bs-target="#carousel-<%= post._id %>" data-bs-slide="prev" style="width:36px;">
+                          <span class="carousel-control-prev-icon" style="filter:invert(1) brightness(0.4);"></span>
+                        </button>
+                        <button class="carousel-control-next" type="button" data-bs-target="#carousel-<%= post._id %>"
+                          data-bs-slide="next" style="width:36px;">
+                          <span class="carousel-control-next-icon" style="filter:invert(1) brightness(0.4);"></span>
+                        </button>
+                        <div class="carousel-indicators" style="bottom:-18px;">
+                          <% post.images.forEach(function(img, idx) { %>
+                            <button type="button" data-bs-target="#carousel-<%= post._id %>"
+                              data-bs-slide-to="<%= idx %>" class="<%= idx === 0 ? 'active' : '' %>"
+                              style="background:#adb5bd; width:6px; height:6px; border-radius:50%; border:none;">
+                            </button>
+                            <% }); %>
+                        </div>
+                      </div>
+                      <div style="height:10px;"></div>
+                      <% } %>
+                        <% } %>
 
-        <div class="small">
-          <span class="text-muted">By</span>
-          <span class="fw-bold text-danger ms-1">
-            <%= post.author ? (post.author.organizationName || post.author.fullName) : "Unknown" %>
-          </span>
-        </div>
+                          <!-- Description preview -->
+                          <div class="text-secondary mb-2"
+                            style="line-height:1.6; font-size:0.92rem; white-space:pre-line;">
+                            <%= preview %>
+                              <% if (isLong) { %>
+                                <a href="/posts/<%= post._id %>" class="text-decoration-none ms-1"
+                                  style="color:#04888D; font-size:0.88rem;">Read more</a>
+                                <% } %>
+                          </div>
+
+                          <!-- Tags -->
+                          <% if (post.tags && post.tags.length> 0) { %>
+                            <div class="mb-3">
+                              <% post.tags.forEach(function(tag) { %>
+                                <span class="badge bg-light text-primary border rounded-pill me-1"
+                                  style="font-size:0.72rem;">#<%= tag %></span>
+                                <% }); %>
+                            </div>
+                            <% } %>
+
+                              <!-- Action row: Like, Comment, Save, Report, Share | badge right -->
+                              <div class="d-flex align-items-center gap-3 pt-2 border-top" style="font-size:13px;">
+                                <div class="like-btn text-muted d-flex align-items-center gap-1"
+                                  data-id="<%= post._id %>" style="cursor:pointer;">
+                                  <i class="bi <%= isLiked ? 'bi-heart-fill text-danger' : 'bi-heart' %>"></i>
+                                  <span class="like-count">
+                                    <%= post.likes.length %>
+                                  </span>
+                                </div>
+
+                                <a href="/posts/<%= post._id %>#comments"
+                                  class="text-decoration-none text-muted d-flex align-items-center gap-1">
+                                  <i class="bi bi-chat-dots"></i>
+                                  <span>
+                                    <%= post.commentCount %>
+                                  </span>
+                                </a>
+
+                                <div class="save-btn text-muted" data-id="<%= post._id %>" style="cursor:pointer;">
+                                  <i class="bi <%= isSaved ? 'bi-bookmark-fill text-warning' : 'bi-bookmark' %>"></i>
+                                </div>
+
+                                <% if (userId && post.author && post.author._id.toString() !==userId.toString()) { %>
+                                  <span data-bs-toggle="modal" data-bs-target="#reportModal-<%= post._id %>"
+                                    style="cursor:pointer;" title="Report" class="text-muted">
+                                    <i class="bi bi-flag"></i>
+                                  </span>
+                                  <% } %>
+
+                                    <% if (userId) { %>
+                                      <span data-bs-toggle="modal" data-bs-target="#shareModal-<%= post._id %>"
+                                        style="cursor:pointer;" title="Share" class="text-muted">
+                                        <i class="bi bi-share"></i>
+                                      </span>
+                                      <% } %>
+
+                                        <!-- Type badge — bottom right -->
+                                        <span class="ms-auto badge <%= badgeClass(post.type) %> rounded-pill"
+                                          style="font-size:0.7rem;">
+                                          <%= badgeLabel(post.type) %>
+                                        </span>
+                              </div>
+
+              </div>
+            </div>
+
+            <% /* Report modal */%>
+              <% if (userId && post.author && post.author._id.toString() !==userId.toString()) { %>
+                <div class="modal fade" id="reportModal-<%= post._id %>" tabindex="-1" aria-hidden="true">
+                  <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-0 rounded-4 shadow">
+                      <div class="modal-header border-0 pb-0">
+                        <h5 class="modal-title fw-bold"><i class="bi bi-flag me-2 text-danger"></i>Report Post</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                      </div>
+                      <form action="/posts/<%= post._id %>/report" method="POST">
+                        <div class="modal-body">
+                          <p class="text-muted small mb-3">Select a reason for reporting this post.</p>
+                          <div class="mb-3">
+                            <label class="form-label fw-semibold">Reason <span class="text-danger">*</span></label>
+                            <select name="reason" class="form-select" required>
+                              <option value="">— Select a reason —</option>
+                              <option value="spam">Spam</option>
+                              <option value="misinformation">Misinformation</option>
+                              <option value="harassment">Harassment</option>
+                              <option value="hate_speech">Hate Speech</option>
+                              <option value="scam_fraud">Scam / Fraud</option>
+                              <option value="inappropriate">Inappropriate Content</option>
+                            </select>
+                          </div>
+                          <div class="mb-1">
+                            <label class="form-label fw-semibold">Note <span
+                                class="text-muted fw-normal">(optional)</span></label>
+                            <input type="text" name="note" class="form-control" placeholder="Brief note (max 10 words)">
+                            <div class="form-text">10 words maximum.</div>
+                          </div>
+                        </div>
+                        <div class="modal-footer border-0">
+                          <button type="button" class="btn btn-light rounded-pill px-4"
+                            data-bs-dismiss="modal">Cancel</button>
+                          <button type="submit" class="btn btn-danger rounded-pill px-4">Submit Report</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+                <% } %>
+
+                  <% /* Share modal */%>
+                    <% if (userId) { %>
+                      <div class="modal fade" id="shareModal-<%= post._id %>" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered" style="max-width:340px;">
+                          <div class="modal-content border-0 rounded-4 shadow">
+                            <div class="modal-header border-0 pb-0">
+                              <h5 class="modal-title fw-bold"><i class="bi bi-share me-2"></i>Share Post</h5>
+                              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body pt-2 pb-3">
+                              <button type="button"
+                                class="btn btn-light border w-100 text-start d-flex align-items-center gap-3 mb-2 rounded-3 px-3 py-2 copy-link-btn"
+                                data-postid="<%= post._id %>">
+                                <i class="bi bi-link-45deg fs-5 text-muted"></i>
+                                <span>Copy link</span>
+                                <span class="ms-auto text-success small copy-msg" style="display:none;">Copied!</span>
+                              </button>
+                              <a href="#" target="_blank" rel="noopener"
+                                class="btn btn-light border w-100 text-start d-flex align-items-center gap-3 mb-2 rounded-3 px-3 py-2 text-decoration-none text-dark wa-share-link"
+                                data-postid="<%= post._id %>" data-title="<%= post.title %>">
+                                <i class="bi bi-whatsapp fs-5" style="color:#25d366;"></i>
+                                <span>Share to WhatsApp</span>
+                              </a>
+                              <button type="button"
+                                class="btn btn-light border w-100 text-start d-flex align-items-center gap-3 rounded-3 px-3 py-2 open-send-msg-btn"
+                                data-postid="<%= post._id %>" data-title="<%= post.title %>"
+                                data-sharemodalid="shareModal-<%= post._id %>">
+                                <i class="bi bi-chat-dots fs-5 text-muted"></i>
+                                <span>Send in message</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <% } %>
+
+                        <% }); %>
+
+    </div><!-- /col-lg-7 -->
+
+    <!-- RIGHT SIDEBAR: Recent Posts -->
+    <div class="col-lg-4 offset-lg-1 d-none d-lg-block">
+      <div class="card border-0 shadow-sm rounded-4 bg-white p-3" style="position:sticky; top:88px;">
+        <div class="fw-semibold mb-2"
+          style="font-size:13px; color:#64748b; text-transform:uppercase; letter-spacing:0.06em;">Recent Posts</div>
+        <% if (recentPosts.length===0) { %>
+          <p class="text-muted small mb-0">No posts yet.</p>
+          <% } else { %>
+            <% recentPosts.forEach(function(rp) { var rpAuthor=rp.author ? (rp.author.communityName ||
+              rp.author.organizationName || rp.author.fullName) : 'Unknown' ; %>
+              <a href="/posts/<%= rp._id %>" class="recent-post-item">
+                <div class="fw-medium" style="color:#1e293b;">
+                  <%= rp.title %>
+                </div>
+                <div class="rp-meta">
+                  <%= rpAuthor %> &middot; <%= relativeTime(rp.createdAt) %>
+                </div>
+              </a>
+              <% }); %>
+                <% } %>
       </div>
     </div>
-  </div>
-<% }) %>
 
-<script>
-document.querySelectorAll(".like-btn").forEach(button => {
-  button.addEventListener("click", async () => {
-    const postId = button.dataset.id;
-    const icon = button.querySelector("i");
+  </div><!-- /row -->
 
-    // Start Animation
-    icon.classList.add("animate-pop");
-    icon.addEventListener("animationend", () => {
-      icon.classList.remove("animate-pop");
-    }, { once: true });
-
-    try {
-      const res = await fetch(`/posts/${postId}/like`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" }
+  <script>
+    document.querySelectorAll(".like-btn").forEach(function (button) {
+      button.addEventListener("click", async function () {
+        var postId = button.dataset.id;
+        var icon = button.querySelector("i");
+        icon.classList.add("animate-pop");
+        icon.addEventListener("animationend", function () { icon.classList.remove("animate-pop"); }, { once: true });
+        try {
+          var res = await fetch("/posts/" + postId + "/like", { method: "POST", headers: { "Content-Type": "application/json" } });
+          var data = await res.json();
+          if (data.success) {
+            button.querySelector(".like-count").innerText = data.likeCount;
+            if (data.liked) { icon.classList.replace("bi-heart", "bi-heart-fill"); icon.classList.add("text-danger"); }
+            else { icon.classList.replace("bi-heart-fill", "bi-heart"); icon.classList.remove("text-danger"); }
+          }
+        } catch (e) { console.error("Like error:", e); }
       });
-      const data = await res.json();
+    });
 
-      if (data.success) {
-        const countSpan = button.querySelector(".like-count");
-        countSpan.innerText = data.likeCount;
-
-        if (data.liked) {
-          icon.classList.replace("bi-heart", "bi-heart-fill");
-          icon.classList.add("text-danger");
-        } else {
-          icon.classList.replace("bi-heart-fill", "bi-heart");
-          icon.classList.remove("text-danger");
-        }
-      }
-    } catch (err) { console.error("Like error:", err); }
-  });
-});
-     
-</script>
-<script>
-document.querySelectorAll(".save-btn").forEach(button => {
-  button.addEventListener("click", async () => {
-    const postId = button.dataset.id;
-    const icon = button.querySelector("i");
-
-    // Start Animation
-    icon.classList.add("animate-pop");
-    icon.addEventListener("animationend", () => {
-      icon.classList.remove("animate-pop");
-    }, { once: true });
-
-    try {
-      const res = await fetch(`/posts/${postId}/save`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" }
+    document.querySelectorAll(".save-btn").forEach(function (button) {
+      button.addEventListener("click", async function () {
+        var postId = button.dataset.id;
+        var icon = button.querySelector("i");
+        icon.classList.add("animate-pop");
+        icon.addEventListener("animationend", function () { icon.classList.remove("animate-pop"); }, { once: true });
+        try {
+          var res = await fetch("/posts/" + postId + "/save", { method: "POST", headers: { "Content-Type": "application/json" } });
+          var data = await res.json();
+          if (data.success) {
+            if (data.saved) {
+              icon.className = 'bi bi-bookmark-fill text-warning';
+            } else {
+              icon.className = 'bi bi-bookmark';
+            }
+          }
+        } catch (e) { console.error("Save error:", e); }
       });
-      const data = await res.json();
+    });
+  </script>
+  <script>
+    // Carousel arrow visibility — hide prev on first slide, next on last slide
+    document.querySelectorAll('.carousel[data-bs-wrap="false"]').forEach(function (el) {
+      var items = el.querySelectorAll('.carousel-item');
+      var total = items.length;
+      var prevBtn = el.querySelector('.carousel-control-prev');
+      var nextBtn = el.querySelector('.carousel-control-next');
 
-      if (data.success) {
-        if (data.saved) {
-          icon.classList.replace("bi-bookmark", "bi-bookmark-fill");
-          icon.classList.add("text-warning");
-        } else {
-          icon.classList.replace("bi-bookmark-fill", "bi-bookmark");
-          icon.classList.remove("text-warning");
-        }
+      function updateArrows() {
+        var activeIdx = Array.from(items).findIndex(function (item) {
+          return item.classList.contains('active');
+        });
+        if (prevBtn) prevBtn.classList.toggle('d-none', activeIdx === 0);
+        if (nextBtn) nextBtn.classList.toggle('d-none', activeIdx === total - 1);
       }
-    } catch (err) { console.error("Save error:", err); }
-  });
-});
-</script>
+
+      updateArrows();
+      el.addEventListener('slid.bs.carousel', updateArrows);
+    });
+  </script>
+  <script src="/js/share.js"></script>

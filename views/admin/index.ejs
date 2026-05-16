@@ -1,61 +1,355 @@
-<h3 class="mb-4">Welcome, Admin</h3>
+<style>
+  /* ── Stat cards ─────────────────────────────────────────────── */
+  .dash-stat {
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px 22px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    border: 1px solid #e8edf2;
+    border-left: 4px solid #04888D;
+    transition: box-shadow 0.15s;
+  }
 
+  .dash-stat:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.09);
+  }
+
+  .dash-stat.warn {
+    border-left-color: #f59e0b;
+  }
+
+  .dash-stat .ds-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: #94a3b8;
+    margin-bottom: 10px;
+  }
+
+  .dash-stat .ds-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1;
+  }
+
+  .dash-stat.warn .ds-value {
+    color: #b45309;
+  }
+
+  /* ── White panels ───────────────────────────────────────────── */
+  .dash-panel {
+    background: #fff;
+    border-radius: 10px;
+    padding: 22px 24px;
+    border: 1px solid #e8edf2;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    height: 100%;
+  }
+
+  .dash-panel-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: #94a3b8;
+    margin-bottom: 18px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  /* ── Activity rows ──────────────────────────────────────────── */
+  .act-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 0;
+    border-bottom: 1px solid #f8fafc;
+    font-size: 13.5px;
+    color: #334155;
+    gap: 10px;
+  }
+
+  .act-row:last-child {
+    border-bottom: none;
+  }
+
+  .act-date {
+    font-size: 11.5px;
+    color: #94a3b8;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .status-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-right: 8px;
+    flex-shrink: 0;
+  }
+
+  .dot-approved {
+    background: #22c55e;
+  }
+
+  .dot-pending {
+    background: #f59e0b;
+  }
+
+  .dot-rejected {
+    background: #ef4444;
+  }
+
+  /* ── Attention rows ─────────────────────────────────────────── */
+  .attn-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 0;
+    border-bottom: 1px solid #f1f5f9;
+    gap: 16px;
+  }
+
+  .attn-row:last-child {
+    border-bottom: none;
+  }
+
+  .attn-label {
+    font-size: 14px;
+    color: #1e293b;
+    font-weight: 500;
+  }
+
+  .attn-count {
+    font-size: 22px;
+    font-weight: 700;
+    min-width: 40px;
+    text-align: right;
+  }
+
+  .attn-count.has-items {
+    color: #ef4444;
+  }
+
+  .attn-count.no-items {
+    color: #22c55e;
+  }
+</style>
+
+<!-- STAT CARDS -->
 <div class="row g-3 mb-4">
-  <div class="col-md-6 col-xl-3">
-    <div class="stat-card">
-      <div class="stat-label">Pending Organization Requests</div>
-      <div class="stat-value"><%= pendingOrgRequests %></div>
+  <div class="col-6 col-xl">
+    <div class="dash-stat warn">
+      <div class="ds-label">Pending Org Requests</div>
+      <div class="ds-value">
+        <%= pendingOrgRequests %>
+      </div>
     </div>
   </div>
-
-  <div class="col-md-6 col-xl-3">
-    <div class="stat-card">
-      <div class="stat-label">Pending Community Requests</div>
-      <div class="stat-value"><%= pendingCommunityRequests %></div>
+  <div class="col-6 col-xl">
+    <div class="dash-stat warn">
+      <div class="ds-label">Pending Community Requests</div>
+      <div class="ds-value">
+        <%= pendingCommunityRequests %>
+      </div>
     </div>
   </div>
-
-  <div class="col-md-6 col-xl-3">
-    <div class="stat-card">
-      <div class="stat-label">Total Organizations</div>
-      <div class="stat-value"><%= totalOrganizations %></div>
+  <div class="col-6 col-xl">
+    <div class="dash-stat">
+      <div class="ds-label">Organizations</div>
+      <div class="ds-value">
+        <%= totalOrganizations %>
+      </div>
     </div>
   </div>
-
-  <div class="col-md-6 col-xl-3">
-    <div class="stat-card">
-      <div class="stat-label">Total Citizens</div>
-      <div class="stat-value"><%= totalCitizens %></div>
+  <div class="col-6 col-xl">
+    <div class="dash-stat">
+      <div class="ds-label">Community Admins</div>
+      <div class="ds-value">
+        <%= totalCommunityAdmins %>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl">
+    <div class="dash-stat">
+      <div class="ds-label">Citizens</div>
+      <div class="ds-value">
+        <%= totalCitizens %>
+      </div>
     </div>
   </div>
 </div>
 
-<div class="mb-4">
-  <h5 class="mb-3">Request Status Overview</h5>
-  <div>
-    <span class="status-chip chip-approved">Approved: <%= approvedCount %></span>
-    <span class="status-chip chip-pending">Pending: <%= pendingCount %></span>
-    <span class="status-chip chip-rejected">Rejected: <%= rejectedCount %></span>
-  </div>
-</div>
+<!-- ROW 2: Doughnut + Activity -->
+<div class="row g-4 mb-4">
 
-<div>
-  <h5 class="mb-3">Recent Activity</h5>
-
-  <% if (recentActivities.length === 0) { %>
-    <p class="text-muted mb-0">No recent activity yet.</p>
-  <% } %>
-
-  <% recentActivities.forEach(activity => { %>
-    <div class="activity-card d-flex justify-content-between align-items-center flex-wrap gap-2">
-      <div><%= activity.text %></div>
-      <small class="text-muted">
-        <%= new Date(activity.date).toLocaleDateString("en-GB", {
-          day: "numeric",
-          month: "short",
-          year: "numeric"
-        }) %>
-      </small>
+  <div class="col-lg-4">
+    <div class="dash-panel">
+      <div class="dash-panel-title">Request Status</div>
+      <% if (approvedCount===0 && pendingCount===0 && rejectedCount===0) { %>
+        <p class="text-muted small mb-0">No registration data yet.</p>
+        <% } else { %>
+          <div style="max-width:190px; margin:0 auto;">
+            <canvas id="statusPieChart"></canvas>
+          </div>
+          <div class="d-flex justify-content-center gap-3 mt-3 flex-wrap" style="font-size:11.5px; color:#64748b;">
+            <span><span
+                style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#22c55e;margin-right:4px;"></span>Approved
+              (<%= approvedCount %>)</span>
+            <span><span
+                style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#f59e0b;margin-right:4px;"></span>Pending
+              (<%= pendingCount %>)</span>
+            <span><span
+                style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#ef4444;margin-right:4px;"></span>Rejected
+              (<%= rejectedCount %>)</span>
+          </div>
+          <% } %>
     </div>
-  <% }) %>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="dash-panel">
+      <div class="dash-panel-title">Recent Activity — Last 7 Days</div>
+      <% if (recentActivities.length===0) { %>
+        <p class="text-muted mb-0" style="font-size:13.5px;">No activity in the last 7 days.</p>
+        <% } else { %>
+          <% recentActivities.forEach(function(activity) { %>
+            <div class="act-row">
+              <div class="d-flex align-items-center">
+                <span
+                  class="status-dot <%= activity.status === 'approved' ? 'dot-approved' : activity.status === 'rejected' ? 'dot-rejected' : 'dot-pending' %>"></span>
+                <%= activity.text %>
+              </div>
+              <span class="act-date">
+                <%= new Date(activity.date).toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric"
+                  }) %>
+              </span>
+            </div>
+            <% }); %>
+              <% } %>
+    </div>
+  </div>
+
 </div>
+
+<!-- ROW 3: Bar chart + Attention Needed -->
+<div class="row g-4">
+
+  <div class="col-lg-5">
+    <div class="dash-panel">
+      <div class="dash-panel-title">System User Breakdown</div>
+      <canvas id="userBarChart" style="max-height:200px;"></canvas>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="dash-panel">
+      <div class="dash-panel-title">Attention Needed</div>
+
+      <div class="attn-row">
+        <div class="attn-label">Pending Verification Requests</div>
+        <div class="d-flex align-items-center gap-3">
+          <span
+            class="attn-count <%= (pendingOrgRequests + pendingCommunityRequests) > 0 ? 'has-items' : 'no-items' %>">
+            <%= pendingOrgRequests + pendingCommunityRequests %>
+          </span>
+          <a href="/admin/requests" class="btn btn-sm btn-outline-secondary rounded px-3"
+            style="font-size:12.5px; white-space:nowrap;">
+            Go to Verification Requests
+          </a>
+        </div>
+      </div>
+
+      <div class="attn-row">
+        <div class="attn-label">Unresolved Reports</div>
+        <div class="d-flex align-items-center gap-3">
+          <span class="attn-count <%= totalReports > 0 ? 'has-items' : 'no-items' %>">
+            <%= totalReports %>
+          </span>
+          <a href="/admin/reports" class="btn btn-sm btn-outline-secondary rounded px-3"
+            style="font-size:12.5px; white-space:nowrap;">
+            View Reports
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+  (function () {
+    // Doughnut
+    var pie = document.getElementById('statusPieChart');
+    if (pie) {
+      new Chart(pie, {
+        type: 'doughnut',
+        data: {
+          labels: ['Approved', 'Pending', 'Rejected'],
+          datasets: [{
+            data: [<%= approvedCount %>, <%= pendingCount %>, <%= rejectedCount %>],
+            backgroundColor: ['#22c55e', '#f59e0b', '#ef4444'],
+            borderWidth: 0,
+            hoverOffset: 4,
+          }]
+        },
+        options: {
+          cutout: '66%',
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: function (c) { return ' ' + c.label + ': ' + c.parsed; } } }
+          },
+          responsive: true,
+          maintainAspectRatio: true,
+        }
+      });
+    }
+
+    // Bar chart
+    var bar = document.getElementById('userBarChart');
+    if (bar) {
+      new Chart(bar, {
+        type: 'bar',
+        data: {
+          labels: ['Organizations', 'Community Admins', 'Citizens'],
+          datasets: [{
+            label: 'Users',
+            data: [<%= totalOrganizations %>, <%= totalCommunityAdmins %>, <%= totalCitizens %>],
+            backgroundColor: ['#3b82f6', '#6366f1', '#0ea5e9'],
+            borderRadius: 5,
+            borderSkipped: false,
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: function (c) { return ' ' + c.parsed.x; } } }
+          },
+          scales: {
+            x: {
+              grid: { color: '#f1f5f9' },
+              ticks: { font: { size: 11 }, color: '#94a3b8' },
+              beginAtZero: true,
+            },
+            y: {
+              grid: { display: false },
+              ticks: { font: { size: 12 }, color: '#475569' },
+            }
+          },
+          responsive: true,
+          maintainAspectRatio: false,
+        }
+      });
+    }
+  })();
+</script>

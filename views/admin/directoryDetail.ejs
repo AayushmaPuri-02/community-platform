@@ -1,82 +1,256 @@
 <p>
-  <a href="/admin/directory" class="btn btn-outline-secondary btn-sm">← Back to Directory</a>
+  <a href="/admin/directory?type=<%= user.role %>" class="btn btn-outline-secondary btn-sm">← Back to Directory</a>
 </p>
 
-<div class="detail-card">
+<div class="detail-card mb-4">
   <div class="row g-4 align-items-start">
     <div class="col-md-4 col-lg-3 text-center">
-      <img
-        src="<%= user.profileImage || '/images/default-avatar.png' %>"
-        alt="Profile Image"
+      <img src="<%= user.profileImage || '/images/default-avatar.png' %>" alt="Profile Image"
         class="img-fluid rounded-4 border shadow-sm"
-        style="width: 100%; max-width: 220px; height: 220px; object-fit: cover;"
-      >
+        style="width:100%; max-width:220px; height:220px; object-fit:cover;">
     </div>
 
     <div class="col-md-8 col-lg-9">
       <div class="detail-row">
         <span class="detail-label">Name</span>
-        <div><%= user.organizationName || user.fullName %></div>
+        <div>
+          <%= user.communityName || user.organizationName || user.fullName %>
+        </div>
       </div>
-
       <div class="detail-row">
         <span class="detail-label">Email</span>
-        <div><%= user.email %></div>
+        <div>
+          <%= user.email %>
+        </div>
       </div>
-
       <div class="detail-row">
         <span class="detail-label">Role</span>
-        <div class="text-capitalize"><%= user.role %></div>
+        <div class="text-capitalize">
+          <%= user.role==='communityAdmin' ? 'Community Admin' : user.role %>
+        </div>
       </div>
-
       <div class="detail-row">
         <span class="detail-label">Location</span>
-        <div><%= user.location || "N/A" %></div>
-      </div>
-
-      <% if (user.contactInfo) { %>
-        <div class="detail-row">
-          <span class="detail-label">Contact Info</span>
-          <div><%= user.contactInfo %></div>
-        </div>
-      <% } %>
-
-      <% if (user.mobileNumber) { %>
-        <div class="detail-row">
-          <span class="detail-label">Mobile Number</span>
-          <div><%= user.mobileNumber %></div>
-        </div>
-      <% } %>
-
-      <% if (user.bio) { %>
-        <div class="detail-row">
-          <span class="detail-label">Bio</span>
-          <div><%= user.bio %></div>
-        </div>
-      <% } %>
-
-      <% if (user.socialMediaLink) { %>
-        <div class="detail-row">
-          <span class="detail-label">Website / Social</span>
-          <a href="<%= user.socialMediaLink %>" target="_blank"><%= user.socialMediaLink %></a>
-        </div>
-      <% } %>
-
-      <div class="detail-row">
-        <span class="detail-label">Status</span>
-        <div class="text-capitalize"><%= user.status %></div>
-      </div>
-
-      <div class="detail-row">
-        <span class="detail-label">Joined</span>
         <div>
-          <%= new Date(user.createdAt).toLocaleDateString("en-GB", {
-            day: "numeric",
-            month: "long",
-            year: "numeric"
-          }) %>
+          <%= user.location || 'N/A' %>
+            <% if (user.homeLatitude && user.homeLongitude) { %>
+              <a href="https://www.google.com/maps?q=<%= user.homeLatitude %>,<%= user.homeLongitude %>" target="_blank"
+                class="ms-2 text-decoration-none" style="font-size:12px; color:#04888D;">
+                <i class="bi bi-map me-1"></i>View on map
+              </a>
+              <% } %>
         </div>
       </div>
+      <% if (user.publicPhone) { %>
+        <div class="detail-row">
+          <span class="detail-label">Phone</span>
+          <div>
+            <%= user.publicPhone %>
+          </div>
+        </div>
+        <% } else if (user.contactInfo) { %>
+          <div class="detail-row">
+            <span class="detail-label">Contact</span>
+            <div>
+              <%= user.contactInfo %>
+            </div>
+          </div>
+          <% } %>
+            <% if (user.mobileNumber) { %>
+              <div class="detail-row">
+                <span class="detail-label">Mobile</span>
+                <div>
+                  <%= user.mobileNumber %>
+                </div>
+              </div>
+              <% } %>
+                <% if (user.bio) { %>
+                  <div class="detail-row">
+                    <span class="detail-label">Bio</span>
+                    <div>
+                      <%= user.bio %>
+                    </div>
+                  </div>
+                  <% } %>
+                    <% if (user.socialMediaLink) { %>
+                      <div class="detail-row">
+                        <span class="detail-label">Website / Social</span>
+                        <a href="<%= user.socialMediaLink %>" target="_blank">
+                          <%= user.socialMediaLink %>
+                        </a>
+                      </div>
+                      <% } %>
+                        <div class="detail-row">
+                          <span class="detail-label">Status</span>
+                          <div class="text-capitalize">
+                            <%= user.status %>
+                          </div>
+                        </div>
+                        <div class="detail-row">
+                          <span class="detail-label">Joined</span>
+                          <div>
+                            <%= new Date(user.createdAt).toLocaleDateString("en-GB", { day:"numeric", month:"long",
+                              year:"numeric" }) %>
+                          </div>
+                        </div>
     </div>
   </div>
 </div>
+
+<!-- Warning history -->
+<% if (user.warningHistory && user.warningHistory.length> 0) { %>
+  <div class="detail-card mb-4">
+    <h6 class="fw-bold mb-3 text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Warning History (<%=
+        user.warningHistory.length %>)</h6>
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" style="font-size:13px;">
+        <thead class="table-light">
+          <tr>
+            <th>Date</th>
+            <th>Reason</th>
+            <th>Message</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% user.warningHistory.slice().reverse().forEach(function(w) { %>
+            <tr>
+              <td class="align-middle text-muted" style="white-space:nowrap;">
+                <%= new Date(w.warnedAt).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })
+                  %>
+              </td>
+              <td class="align-middle">
+                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle rounded-pill px-2"
+                  style="font-size:11px; text-transform:capitalize;">
+                  <%= (w.reason || '' ).replace(/_/g, ' ' ) %>
+                </span>
+              </td>
+              <td class="align-middle text-muted" style="font-size:12.5px;">
+                <%= w.note || '—' %>
+              </td>
+            </tr>
+            <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <% } %>
+
+    <!-- Posts by this user -->
+    <div class="detail-card">
+      <h6 class="fw-bold mb-3" style="color:#04888D;">Posts by this user</h6>
+
+      <% if (!userPosts || userPosts.length===0) { %>
+        <p class="text-muted small mb-0">No posts yet.</p>
+        <% } else { %>
+          <div class="table-responsive">
+            <table class="table table-hover mb-0" style="font-size:13px;">
+              <thead class="table-light">
+                <tr>
+                  <th>Title</th>
+                  <th>Type</th>
+                  <th>Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% userPosts.forEach(function(p, pi) { %>
+                  <tr>
+                    <td class="align-middle">
+                      <button type="button" class="btn btn-link p-0 text-decoration-none fw-semibold text-start"
+                        style="color:#04888D; font-size:13px;" data-bs-toggle="modal"
+                        data-bs-target="#postModal-<%= pi %>">
+                        <%= p.title %>
+                      </button>
+                    </td>
+                    <td class="align-middle">
+                      <span class="badge bg-light text-dark border text-capitalize" style="font-size:11px;">
+                        <%= p.type %>
+                      </span>
+                    </td>
+                    <td class="align-middle text-muted" style="white-space:nowrap;">
+                      <%= new Date(p.createdAt).toLocaleDateString("en-GB", { day:"numeric", month:"short",
+                        year:"numeric" }) %>
+                    </td>
+                  </tr>
+                  <% }); %>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- One modal per post -->
+          <% userPosts.forEach(function(p, pi) { %>
+            <div class="modal fade" id="postModal-<%= pi %>" tabindex="-1" aria-hidden="true">
+              <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content border-0 rounded-4 shadow">
+                  <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" style="font-size:15px;">
+                      <%= p.title %>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+                  <div class="modal-body pt-2" style="font-size:13.5px;">
+
+                    <div class="d-flex gap-2 mb-3 flex-wrap align-items-center">
+                      <span class="badge bg-light text-dark border text-capitalize">
+                        <%= p.type %>
+                      </span>
+                      <span class="text-muted" style="font-size:12px;">
+                        <%= new Date(p.createdAt).toLocaleDateString("en-GB", { day:"numeric", month:"long",
+                          year:"numeric" }) %>
+                      </span>
+                    </div>
+
+                    <% if (p.description) { %>
+                      <p style="line-height:1.65; color:#334155; white-space:pre-line; margin-bottom:0;">
+                        <%= p.description %>
+                      </p>
+                      <% } %>
+
+                        <% if (p.type==='alert' ) { %>
+                          <hr class="my-3">
+                          <div class="row g-2" style="font-size:12.5px;">
+                            <% if (p.alertCategory) { %>
+                              <div class="col-sm-4"><span class="text-muted">Category:</span> <strong>
+                                  <%= p.alertCategory %>
+                                </strong></div>
+                              <% } %>
+                                <% if (p.alertStatus) { %>
+                                  <div class="col-sm-4"><span class="text-muted">Status:</span> <strong>
+                                      <%= p.alertStatus %>
+                                    </strong></div>
+                                  <% } %>
+                                    <% if (p.alertRadius) { %>
+                                      <div class="col-sm-4"><span class="text-muted">Radius:</span> <strong>
+                                          <%= p.alertRadius %>
+                                        </strong></div>
+                                      <% } %>
+                          </div>
+                          <% } %>
+
+                            <% if (p.type==='volunteer' ) { %>
+                              <hr class="my-3">
+                              <div class="row g-2" style="font-size:12.5px;">
+                                <% if (p.volunteerDate) { %>
+                                  <div class="col-sm-6"><span class="text-muted">Date:</span> <strong>
+                                      <%= new Date(p.volunteerDate).toLocaleDateString("en-GB", { day:"numeric",
+                                        month:"long", year:"numeric" }) %>
+                                    </strong></div>
+                                  <% } %>
+                                    <% if (p.maxVolunteers) { %>
+                                      <div class="col-sm-6"><span class="text-muted">Max volunteers:</span> <strong>
+                                          <%= p.maxVolunteers %>
+                                        </strong></div>
+                                      <% } %>
+                              </div>
+                              <% } %>
+
+                  </div>
+                  <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <% }); %>
+
+              <% } %>
+    </div>

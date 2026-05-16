@@ -1,5 +1,7 @@
 <style>
-  body { background-color: #f4f7f6; }
+  body {
+    background-color: #f4f7f6;
+  }
 
   .card-profile {
     border-radius: 18px;
@@ -22,14 +24,14 @@
     font-weight: 500;
   }
 
-.hero-banner {
-  height: 220px;
-  border-radius: 18px 18px 0 0;
-  background-image: linear-gradient(rgba(223, 244, 242, 0.72), rgba(243, 253, 252, 0.72)), url("<%= user.profileImage || '/images/default-avatar.png' %>");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
+  .hero-banner {
+    height: 220px;
+    border-radius: 18px 18px 0 0;
+    background-image: linear-gradient(rgba(223, 244, 242, 0.72), rgba(243, 253, 252, 0.72)), url("<%= user.profileImage || '/images/default-avatar.png' %>");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
 
   .profile-avatar {
     width: 130px;
@@ -51,179 +53,503 @@
 <div class="container py-4">
   <% if (backUrl) { %>
     <p>
-      <a href="<%= backUrl %>" class="btn btn-outline-secondary btn-sm">← Back</a>
+      <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm">← Back</a>
     </p>
-  <% } %>
+    <% } %>
 
-  <% if (user.role === "citizen") { %>
-    <!-- CITIZEN PROFILE -->
-    <div class="row justify-content-center">
-      <div class="col-lg-8">
-        <div class="card card-profile shadow-sm overflow-hidden">
-          <div class="hero-banner"></div>
+      <% if (user.role==="citizen" ) { %>
+        <!-- CITIZEN PROFILE -->
+        <div class="row justify-content-center">
+          <div class="col-lg-8">
+            <div class="card card-profile shadow-sm overflow-hidden">
+              <div class="hero-banner"></div>
 
-          <div class="card-body text-center px-4 pb-5">
-            <img
-              src="<%= user.profileImage || '/images/default-avatar.png' %>"
-              alt="Profile Image"
-              class="rounded-circle shadow-sm profile-avatar"
-            >
+              <div class="card-body text-center px-4 pb-5">
+                <img src="<%= user.profileImage || '/images/default-avatar.png' %>" alt="Profile Image"
+                  class="rounded-circle shadow-sm profile-avatar">
 
-            <h2 class="fw-bold mt-3 mb-1"><%= user.fullName %></h2>
+                <h2 class="fw-bold mt-3 mb-1">
+                  <%= user.fullName %>
+                    <% var vc=user.volunteerCount || 0; var badgeLabel=null, badgeClass=null; if (vc>= 20) { badgeLabel
+                      = '🥇 Gold'; badgeClass = 'bg-warning text-dark'; }
+                      else if (vc >= 10) { badgeLabel = '🥈 Silver'; badgeClass = 'bg-secondary'; }
+                      else if (vc >= 5) { badgeLabel = '🥉 Bronze'; badgeClass = 'bg-warning text-dark'; }
+                      %>
+                      <% if (badgeLabel) { %>
+                        <span class="badge <%= badgeClass %> ms-2" style="font-size:0.75rem; vertical-align:middle;">
+                          <%= badgeLabel %>
+                        </span>
+                        <% } %>
+                </h2>
 
-            <p class="text-muted mb-2">
-              <i class="bi bi-geo-alt me-1"></i>
-              <%= user.location || 'No location added' %>
-            </p>
+                <p class="text-muted mb-2">
+                  <i class="bi bi-geo-alt me-1"></i>
+                  <%= user.location || 'No location added' %>
+                </p>
 
-            <p class="text-muted small mb-2">
-  Joined <%= user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A" %>
-</p>
+                <p class="text-muted small mb-2">
+                  Joined <%= user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A" %>
+                </p>
 
-<p class="text-muted small mb-4">
-  Following <strong><%= followingCount %></strong> organization/community account<%= followingCount === 1 ? '' : 's' %>
-</p>
+                <p class="text-muted small mb-1">
+                  Following <strong>
+                    <%= followingCount %>
+                  </strong> organization/community account<%= followingCount===1 ? '' : 's' %>
+                </p>
 
-            <div class="d-flex justify-content-center gap-2 flex-wrap">
-              <% if (userId && userId.toString() === user._id.toString()) { %>
-                <a href="/profile/edit" class="btn btn-outline-secondary btn-sm px-4">Edit Profile</a>
-              <% } %>
+                <% if (user.volunteerCount && user.volunteerCount> 0) { %>
+                  <% var vc2=user.volunteerCount; %>
+                    <% var partLabel=vc2>= 10 ? 'Highly Active' : vc2 >= 5 ? 'Regular Volunteer' : 'Participated'; %>
+                      <% var partColor=vc2>= 10 ? '#166534' : vc2 >= 5 ? '#1e40af' : '#374151'; %>
+                        <% var partBg=vc2>= 10 ? '#dcfce7' : vc2 >= 5 ? '#dbeafe' : '#f1f5f9'; %>
+                          <p class="text-muted small mb-4">
+                            <strong>
+                              <%= vc2 %>
+                            </strong> volunteer contribution<%= vc2===1 ? '' : 's' %>
+                              <span class="ms-2 badge rounded-pill"
+                                style="font-size:0.7rem; background:<%= partBg %>; color:<%= partColor %>; font-weight:500;">
+                                <%= partLabel %>
+                              </span>
+                          </p>
+                          <% } else { %>
+                            <p class="mb-4"></p>
+                            <% } %>
 
-              <% if (userId && userId.toString() !== user._id.toString() && role !== "systemAdmin") { %>
-                <a href="/messages/<%= user._id %>" class="btn btn-primary btn-sm px-4">Message</a>
-              <% } %>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+                              <div class="d-flex justify-content-center gap-2 flex-wrap">
+                                <% if (userId && userId.toString()===user._id.toString()) { %>
+                                  <a href="/profile/edit" class="btn btn-outline-secondary btn-sm px-4">Edit Profile</a>
+                                  <% } %>
 
-  <% } else { %>
-    <!-- ORGANIZATION / COMMUNITY PROFILE -->
-    <div class="row g-4">
-      <!-- CENTER CONTENT -->
-      <div class="col-md-9 col-lg-8">
-        <div class="card card-profile shadow-sm overflow-hidden mb-4">
-          <div class="hero-banner"></div>
-
-          <div class="card-body text-center px-4 pb-5">
-            <img
-              src="<%= user.profileImage || '/images/default-avatar.png' %>"
-              alt="Profile Image"
-              class="rounded-circle shadow-sm profile-avatar"
-            >
-
-            <h2 class="fw-bold mt-3 mb-1"><%= user.organizationName || user.fullName %></h2>
-
-            <p class="text-muted mb-2">
-  <i class="bi bi-geo-alt me-1"></i>
-  <%= user.location || 'No location added' %>
-</p>
-
-
-
-            <div class="d-flex justify-content-center gap-2 flex-wrap">
-              <% if (userId && userId.toString() === user._id.toString()) { %>
-    <a href="/profile/edit" class="btn btn-primary px-4 shadow-sm">
-      <i class="bi bi-pencil me-1"></i> Edit Profile
-    </a>
-  <% } %>
-
-              <% if (
-                userId &&
-                userId.toString() !== user._id.toString() &&
-                role !== "systemAdmin" &&
-                (user.role === "organization" || user.role === "communityAdmin")
-              ) { %>
-<form action="/follow/<%= user._id %>/toggle" method="POST" class="d-inline">
-  <button class="btn btn-sm px-4 <%= isFollowing ? 'btn-primary' : 'btn-outline-primary' %>">
-    <%= isFollowing ? "Following" : "Follow" %>
-  </button>
-</form>
-              <% } %>
-
-                <% if (userId && userId.toString() !== user._id.toString() && role !== "systemAdmin") { %>
-    <a href="/messages/<%= user._id %>" class="btn btn-outline-primary px-4">
-      Message
-    </a>
-  <% } %>
-            </div>
-          </div>
-        </div>
-
-        <h5 class="fw-bold mb-3">Posts</h5>
-
-        <% if (posts.length === 0) { %>
-          <div class="p-5 text-center bg-white rounded-4 border-0 shadow-sm">
-            <p class="text-muted mb-0">Nothing posted yet.</p>
-          </div>
-        <% } %>
-
-        <% posts.forEach(post => { %>
-          <div class="card card-profile shadow-sm mb-3 border-0">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-start gap-3">
-                <a href="/posts/<%= post._id %>" class="post-link fs-5"><%= post.title %></a>
-                <small class="text-muted"><%= post.createdAt.toLocaleDateString() %></small>
+                                    <% if (userId && userId.toString() !==user._id.toString() && role !=="systemAdmin" )
+                                      { %>
+                                      <a href="/messages/<%= user._id %>"
+                                        class="btn btn-primary btn-sm px-4">Message</a>
+                                      <% } %>
+                              </div>
               </div>
+            </div>
+          </div>
+        </div>
 
-              <p class="mt-2 text-secondary"><%= post.description %></p>
+        <% if (userId && userId.toString()===user._id.toString()) { %>
+          <% /* OWNER VIEW — three sections */%>
 
-              <% if (post.tags && post.tags.length > 0) { %>
-                <div>
-                  <% post.tags.forEach(tag => { %>
-                    <span class="badge badge-tag me-1">#<%= tag %></span>
-                  <% }) %>
+            <% if (upcomingVolunteers.length> 0) { %>
+              <div class="row justify-content-center mt-4">
+                <div class="col-lg-8">
+                  <div class="card card-profile shadow-sm border-0">
+                    <div class="card-body p-4">
+                      <h5 class="fw-bold mb-3"><i class="bi bi-calendar-check me-2 text-primary"></i>Upcoming</h5>
+                      <% upcomingVolunteers.forEach(function(item) { %>
+                        <div class="d-flex justify-content-between align-items-start py-2 border-bottom">
+                          <div>
+                            <a href="/posts/<%= item.post._id %>" class="fw-semibold text-decoration-none"
+                              style="color:#04888D;">
+                              <%= item.post.title %>
+                            </a>
+                            <div class="text-muted small mt-1">
+                              <%= item.post.author ? (item.post.author.communityName ||
+                                item.post.author.organizationName || item.post.author.fullName) : "Unknown" %>
+                                <% if (item.post.volunteerDate) { %>
+                                  &middot; <%= new Date(item.post.volunteerDate).toLocaleDateString("en-GB", {
+                                    day:"numeric", month:"long", year:"numeric" }) %>
+                                    <% } %>
+                            </div>
+                          </div>
+                          <span class="badge bg-primary ms-3 flex-shrink-0">Upcoming</span>
+                        </div>
+                        <% }); %>
+                    </div>
+                  </div>
                 </div>
-              <% } %>
-            </div>
-          </div>
-        <% }) %>
-      </div>
-
-      <!-- RIGHT SIDEBAR -->
-      <div class="col-lg-4">
-        <div class="card card-profile shadow-sm border-0">
-          <div class="card-body">
-            <h6 class="fw-bold mb-3 text-muted">Organization Information</h6>
-
-            <div class="mb-3">
-              <span class="info-label">About</span>
-              <p class="small mb-0"><%= user.bio || 'No bio provided.' %></p>
-            </div>
-
-            <div class="mb-3">
-              <span class="info-label">Contact</span>
-              <p class="small mb-1"><%= user.contactInfo || 'N/A' %></p>
-            </div>
-
-            <% if (user.socialMediaLink) { %>
-              <div class="mb-3">
-                <span class="info-label">Website / Social</span>
-                <a href="<%= user.socialMediaLink %>" target="_blank" class="small text-decoration-none">
-                  Visit Link
-                </a>
               </div>
-            <% } %>
+              <% } %>
 
-            <hr>
+                <% if (rejectedVolunteers.length> 0) { %>
+                  <div class="row justify-content-center mt-4">
+                    <div class="col-lg-8">
+                      <div class="card card-profile shadow-sm border-0">
+                        <div class="card-body p-4">
+                          <h5 class="fw-bold mb-3"><i class="bi bi-x-circle me-2 text-danger"></i>Rejected</h5>
+                          <% rejectedVolunteers.forEach(function(item) { %>
+                            <div class="d-flex justify-content-between align-items-start py-2 border-bottom">
+                              <div>
+                                <a href="/posts/<%= item.post._id %>" class="fw-semibold text-decoration-none"
+                                  style="color:#04888D;">
+                                  <%= item.post.title %>
+                                </a>
+                                <div class="text-muted small mt-1">
+                                  <%= item.post.author ? (item.post.author.communityName ||
+                                    item.post.author.organizationName || item.post.author.fullName) : "Unknown" %>
+                                    <% if (item.post.volunteerDate) { %>
+                                      &middot; <%= new Date(item.post.volunteerDate).toLocaleDateString("en-GB", {
+                                        day:"numeric", month:"long", year:"numeric" }) %>
+                                        <% } %>
+                                </div>
+                                <% if (item.entry.rejectionReason) { %>
+                                  <div class="text-danger small mt-1">
+                                    <strong>Reason:</strong>
+                                    <%= item.entry.rejectionReason %>
+                                  </div>
+                                  <% } %>
+                              </div>
+                              <span class="badge bg-danger ms-3 flex-shrink-0">Rejected</span>
+                            </div>
+                            <% }); %>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <% } %>
 
-<div class="mb-3">
-  <span class="info-label">Followers</span>
-  <p class="small mb-0"><%= followerCount %></p>
+                    <% if (attendedVolunteers.length> 0) { %>
+                      <div class="row justify-content-center mt-4">
+                        <div class="col-lg-8">
+                          <div class="card card-profile shadow-sm border-0">
+                            <div class="card-body p-4">
+                              <h5 class="fw-bold mb-3"><i class="bi bi-patch-check me-2 text-success"></i>Volunteer
+                                Contributions</h5>
+                              <% attendedVolunteers.forEach(function(item) { %>
+                                <div class="d-flex justify-content-between align-items-start py-2 border-bottom">
+                                  <div>
+                                    <a href="/posts/<%= item.post._id %>" class="fw-semibold text-decoration-none"
+                                      style="color:#04888D;">
+                                      <%= item.post.title %>
+                                    </a>
+                                    <div class="text-muted small mt-1">
+                                      <%= item.post.author ? (item.post.author.communityName ||
+                                        item.post.author.organizationName || item.post.author.fullName) : "Unknown" %>
+                                        <% if (item.post.volunteerDate) { %>
+                                          &middot; <%= new Date(item.post.volunteerDate).toLocaleDateString("en-GB", {
+                                            day:"numeric", month:"long", year:"numeric" }) %>
+                                            <% } %>
+                                    </div>
+                                  </div>
+                                  <span class="badge bg-success ms-3 flex-shrink-0">Attended</span>
+                                </div>
+                                <% }); %>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <% } %>
+
+                        <% if (upcomingVolunteers.length===0 && rejectedVolunteers.length===0 &&
+                          attendedVolunteers.length===0) { %>
+                          <div class="row justify-content-center mt-4">
+                            <div class="col-lg-8">
+                              <div class="card card-profile shadow-sm border-0">
+                                <div class="card-body p-4 text-center text-muted">No volunteering activity yet.</div>
+                              </div>
+                            </div>
+                          </div>
+                          <% } %>
+
+                            <% } else if (attendedVolunteers && attendedVolunteers.length> 0) { %>
+                              <% /* PUBLIC VIEW — attended only */%>
+                                <div class="row justify-content-center mt-4">
+                                  <div class="col-lg-8">
+                                    <div class="card card-profile shadow-sm border-0">
+                                      <div class="card-body p-4">
+                                        <h5 class="fw-bold mb-3">Volunteering</h5>
+                                        <% attendedVolunteers.forEach(function(item) { %>
+                                          <div class="py-2 border-bottom text-muted small">
+                                            <i class="bi bi-patch-check-fill text-success me-1"></i>
+                                            <strong>
+                                              <%= user.fullName %>
+                                            </strong> volunteered at
+                                            <strong>
+                                              <%= item.post.author ? (item.post.author.communityName ||
+                                                item.post.author.organizationName || item.post.author.fullName)
+                                                : "Unknown" %>
+                                            </strong>
+                                            <% if (item.post.volunteerDate) { %>
+                                              &middot; <%= new Date(item.post.volunteerDate).toLocaleDateString("en-GB",
+                                                { day:"numeric", month:"long", year:"numeric" }) %>
+                                                <% } %>
+                                          </div>
+                                          <% }); %>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                                <% } %>
+
+                                  <% } else { %>
+                                    <!-- ORGANIZATION / COMMUNITY PROFILE -->
+                                    <div class="row g-4">
+                                      <!-- CENTER CONTENT -->
+                                      <div class="col-lg-8">
+                                        <div class="card card-profile shadow-sm overflow-hidden mb-4">
+                                          <div class="hero-banner"></div>
+
+                                          <div class="card-body text-center px-4 pb-5">
+                                            <img src="<%= user.profileImage || '/images/default-avatar.png' %>"
+                                              alt="Profile Image" class="rounded-circle shadow-sm profile-avatar">
+
+                                            <h2 class="fw-bold mt-3 mb-1">
+                                              <% if (user.role==="communityAdmin" ) { %>
+                                                <%= user.communityName || (user.location + " Locals" ) %>
+                                                  <% } else { %>
+                                                    <%= user.organizationName || user.fullName %>
+                                                      <% } %>
+                                            </h2>
+
+                                            <p class="text-muted mb-2">
+                                              <i class="bi bi-geo-alt me-1"></i>
+                                              <%= user.location || 'No location added' %>
+                                            </p>
+
+
+
+                                            <div class="d-flex justify-content-center gap-2 flex-wrap">
+                                              <% if (userId && userId.toString()===user._id.toString()) { %>
+                                                <a href="/profile/edit" class="btn btn-primary px-4 shadow-sm">
+                                                  <i class="bi bi-pencil me-1"></i> Edit Profile
+                                                </a>
+                                                <% } %>
+
+                                                  <% if ( userId && userId.toString() !==user._id.toString() && role
+                                                    !=="systemAdmin" && (user.role==="organization" ||
+                                                    user.role==="communityAdmin" ) ) { %>
+                                                    <form action="/follow/<%= user._id %>/toggle" method="POST"
+                                                      class="d-inline">
+                                                      <button
+                                                        class="btn btn-sm px-3 py-2 <%= isFollowing ? 'btn-primary' : 'btn-outline-primary' %>">
+                                                        <%= isFollowing ? "Following" : "Follow" %>
+                                                      </button>
+                                                    </form>
+                                                    <% } %>
+
+                                                      <% if (userId && userId.toString() !==user._id.toString() && role
+                                                        !=="systemAdmin" ) { %>
+                                                        <a href="/messages/<%= user._id %>"
+                                                          class="btn btn-sm btn-outline-secondary px-3 py-2">
+                                                          <i class="bi bi-chat-dots me-1"></i>Message
+                                                        </a>
+                                                        <% } %>
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        <h5 class="fw-bold mb-3">Posts</h5>
+
+                                        <!-- Filter dropdown -->
+                                        <select id="postTypeFilter" class="form-select form-select-sm mb-3"
+                                          style="max-width:200px;">
+                                          <option value="all">All Types</option>
+                                          <option value="alert">Alert</option>
+                                          <option value="volunteer">Volunteer</option>
+                                          <option value="event">Event</option>
+                                          <option value="notice">Notice</option>
+                                          <option value="training">Training</option>
+                                          <option value="community">Community Update</option>
+                                        </select>
+
+                                        <% if (posts.length===0) { %>
+                                          <div class="p-5 text-center bg-white rounded-4 border-0 shadow-sm">
+                                            <p class="text-muted mb-0">Nothing posted yet.</p>
+                                          </div>
+                                          <% } %>
+
+                                            <% posts.forEach(post=> { %>
+                                              <div class="card card-profile shadow-sm mb-3 border-0 post-card"
+                                                data-type="<%= post.type || 'general' %>">
+                                                <div class="card-body">
+                                                  <div
+                                                    class="d-flex justify-content-between align-items-start gap-3 mb-1">
+                                                    <a href="/posts/<%= post._id %>" class="post-link fw-semibold"
+                                                      style="font-size:0.95rem;">
+                                                      <%= post.title %>
+                                                    </a>
+                                                    <small class="text-muted flex-shrink-0" style="font-size:0.78rem;">
+                                                      <%= post.createdAt.toLocaleDateString('en-GB', { day:'numeric',
+                                                        month:'short', year:'numeric' }) %>
+                                                    </small>
+                                                  </div>
+
+                                                  <p class="mt-1 mb-2 text-secondary"
+                                                    style="font-size:0.88rem; line-height:1.55;">
+                                                    <%= (post.description || '' ).length> 120 ?
+                                                      post.description.slice(0,120).trimEnd() + '…' : post.description
+                                                      %>
+                                                  </p>
+
+                                                  <% if (post.tags && post.tags.length> 0) { %>
+                                                    <div>
+                                                      <% post.tags.forEach(tag=> { %>
+                                                        <span
+                                                          class="badge bg-light text-primary border rounded-pill me-1"
+                                                          style="font-size:0.72rem;">#<%= tag %></span>
+                                                        <% }) %>
+                                                    </div>
+                                                    <% } %>
+                                                </div>
+                                              </div>
+                                              <% }) %>
+                                      </div>
+
+                                      <!-- RIGHT SIDEBAR -->
+                                      <div class="col-lg-4">
+                                        <div class="card card-profile shadow-sm border-0">
+                                          <div class="card-body">
+                                            <h6 class="fw-bold mb-3 text-muted">
+                                              <%= user.role==="communityAdmin" ? "Community Information"
+                                                : "Organization Information" %>
+                                            </h6>
+
+                                            <div class="mb-3">
+                                              <span class="info-label">About</span>
+                                              <p class="small mb-0">
+                                                <%= user.bio || 'No bio provided.' %>
+                                              </p>
+                                            </div>
+
+                                            <div class="mb-3">
+                                              <span class="info-label">Phone</span>
+                                              <% var phones=(user.publicPhone || user.contactInfo || ''
+                                                ).split(',').map(function(p){ return p.trim(); }).filter(Boolean); %>
+                                                <% if (phones.length> 0) { %>
+                                                  <% phones.forEach(function(p) { %>
+                                                    <p class="small mb-0">📞 <%= p %>
+                                                    </p>
+                                                    <% }); %>
+                                                      <% } else { %>
+                                                        <p class="small mb-1">N/A</p>
+                                                        <% } %>
+                                            </div>
+
+                                            <div class="mb-3">
+                                              <span class="info-label">Email</span>
+                                              <p class="small mb-1">
+                                                <% if (user.publicEmail) { %>
+                                                  <a href="mailto:<%= user.publicEmail %>" class="text-decoration-none">
+                                                    <%= user.publicEmail %>
+                                                  </a>
+                                                  <% } else { %>
+                                                    N/A
+                                                    <% } %>
+                                              </p>
+                                            </div>
+
+                                            <% if (user.officeHours) { %>
+                                              <div class="mb-3">
+                                                <span class="info-label">Office Hours</span>
+                                                <p class="small mb-1">
+                                                  <%= user.officeHours %>
+                                                </p>
+                                              </div>
+                                              <% } %>
+
+                                                <% if (user.socialMediaLink) { %>
+                                                  <div class="mb-3">
+                                                    <span class="info-label">Website / Social</span>
+                                                    <a href="<%= user.socialMediaLink %>" target="_blank"
+                                                      class="small text-decoration-none">
+                                                      Visit Link
+                                                    </a>
+                                                  </div>
+                                                  <% } %>
+
+                                                    <hr>
+
+                                                    <% if (user.homeLatitude && user.homeLongitude) { %>
+                                                      <div class="mb-3">
+                                                        <span class="info-label">Location</span>
+                                                        <p class="small mb-1"><i class="bi bi-geo-alt me-1"></i>
+                                                          <%= user.locationName || user.location || 'Nepal' %>
+                                                        </p>
+                                                        <button type="button" id="viewOnMapBtn"
+                                                          class="btn btn-sm btn-outline-secondary"
+                                                          style="font-size:0.78rem;">
+                                                          <i class="bi bi-map me-1"></i>View on map
+                                                        </button>
+                                                        <div id="profilePublicMap"
+                                                          style="display:none;height:180px;border-radius:8px;overflow:hidden;margin-top:8px;border:1px solid #e2e8f0;">
+                                                        </div>
+                                                      </div>
+                                                      <% } %>
+
+                                                        <div class="mb-3">
+                                                          <span class="info-label">Followers</span>
+                                                          <p class="small mb-0">
+                                                            <%= followerCount %>
+                                                          </p>
+                                                        </div>
+
+                                                        <div class="mb-3">
+                                                          <span class="info-label">Following</span>
+                                                          <p class="small mb-0">
+                                                            <%= followingCount %>
+                                                          </p>
+                                                        </div>
+
+                                                        <p class="text-muted small mb-0">
+                                                          Joined <%= user.createdAt ? new
+                                                            Date(user.createdAt).toLocaleDateString() : "N/A" %>
+                                                        </p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <% } %>
 </div>
 
-<div class="mb-3">
-  <span class="info-label">Following</span>
-  <p class="small mb-0"><%= followingCount %></p>
-</div>
+<script>
+  (function () {
+    var dropdown = document.getElementById('postTypeFilter');
+    var postCards = document.querySelectorAll('.post-card');
+    if (!dropdown || !postCards.length) return;
 
-<p class="text-muted small mb-0">
-  Joined <%= user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A" %>
-</p>
-          </div>
-        </div>
-      </div>
-    </div>
+    dropdown.addEventListener('change', function () {
+      var filter = dropdown.value;
+      postCards.forEach(function (card) {
+        if (filter === 'all' || card.getAttribute('data-type') === filter) {
+          card.style.display = '';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    });
+  })();
+</script>
+
+<% if (user.homeLatitude && user.homeLongitude) { %>
+  <script>
+    (function () {
+      var btn = document.getElementById('viewOnMapBtn');
+      var mapDiv = document.getElementById('profilePublicMap');
+      if (!btn || !mapDiv) return;
+
+      var lat = <%= user.homeLatitude %>;
+      var lng = <%= user.homeLongitude %>;
+      var mapLoaded = false;
+
+      btn.addEventListener('click', function () {
+        if (mapDiv.style.display === 'none') {
+          mapDiv.style.display = 'block';
+          btn.innerHTML = '<i class="bi bi-map me-1"></i>Hide map';
+          if (!mapLoaded) {
+            mapLoaded = true;
+            var script = document.createElement('script');
+            script.src = 'https://maps.googleapis.com/maps/api/js?key=<%= googleMapsApiKey %>&callback=initProfilePublicMap&loading=async';
+            script.async = true;
+            document.head.appendChild(script);
+          }
+        } else {
+          mapDiv.style.display = 'none';
+          btn.innerHTML = '<i class="bi bi-map me-1"></i>View on map';
+        }
+      });
+
+      window.initProfilePublicMap = function () {
+        var map = new google.maps.Map(mapDiv, {
+          center: { lat: lat, lng: lng }, zoom: 15,
+          mapTypeControl: false, streetViewControl: false,
+          fullscreenControl: false,
+        });
+        new google.maps.Marker({ map: map, position: { lat: lat, lng: lng } });
+      };
+    })();
+  </script>
   <% } %>
-</div>

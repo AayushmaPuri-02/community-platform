@@ -25,4 +25,12 @@ const uploadDocument = multer({
   storage: documentStorage,
 });
 
-module.exports = { uploadImage, uploadDocument };
+// For communityAdmin registration: handles verificationDoc + profileImage in one pass
+const uploadRegistration = multer({
+  storage: documentStorage,
+}).fields([
+  { name: "verificationDoc", maxCount: 1 },
+  { name: "profileImage", maxCount: 1 },
+]);
+
+module.exports = { uploadImage, uploadDocument, uploadRegistration };

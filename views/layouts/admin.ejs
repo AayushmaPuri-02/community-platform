@@ -1,259 +1,325 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-  <title><%= title %></title>
+  <title>
+    <%= title %>
+  </title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200..800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="/css/style.css">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
-<style>
-  body {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    background-color: #f8f9fb;
-  }
-
-  .flash-wrapper {
-    position: fixed;
-    top: 90px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 2000;
-    width: min(700px, 90%);
-  }
-
-  .admin-shell {
-    width: 100%;
-    margin: 0;
-    padding: 0 16px 24px;
-  }
-
-  .admin-header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 1100;
-    display: grid;
-    grid-template-columns: 240px 1fr;
-    align-items: center;
-    column-gap: 24px;
-    padding: 18px 16px 16px;
-    border-bottom: 1px solid #2e2e2e;
-    background: #f8f9fb;
-  }
-
-  .admin-brand {
-    color: #ff8a00;
-    font-weight: 800;
-    font-size: 2rem;
-    margin: 0;
-  }
-
-  .admin-page-title {
-    margin: 0;
-    text-align: center;
-    font-size: 2.1rem;
-    font-weight: 700;
-    color: #222;
-  }
-
-.admin-layout {
-  margin-top: 18px;
-}
-  .admin-sidebar {
-    position: fixed;
-    top: 110px;
-    left: 16px;
-    width: 240px;
-    height: calc(100vh - 126px);
-    overflow-y: auto;
-    padding-right: 14px;
-    border-right: 1px solid #2e2e2e;
-    background: #f8f9fb;
-  }
-
-  .admin-link {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 14px 16px;
-    border: 1px solid #efc991;
-    border-radius: 14px;
-    text-decoration: none;
-    color: #222;
-    margin-bottom: 12px;
-    background: #fff;
-    transition: 0.2s ease;
-  }
-
-  .admin-link:hover,
-  .admin-link.active {
-    background: #fdf6ee;
-    border-color: #e8a34d;
-    color: #111;
-  }
-
-.admin-content {
-  margin-left: 264px;
-  padding: 25px 16px 0 0;
-}
-
-  .stat-card {
-    background: #f8efe3;
-    border-radius: 18px;
-    padding: 22px;
-    text-align: center;
-    box-shadow: 0 6px 14px rgba(0,0,0,0.06);
-  }
-
-  .stat-label {
-    font-size: 1rem;
-    color: #444;
-    margin-bottom: 8px;
-  }
-
-  .stat-value {
-    font-size: 2rem;
-    font-weight: 700;
-    color: #222;
-  }
-
-  .status-chip {
-    display: inline-flex;
-    align-items: center;
-    padding: 10px 14px;
-    border-radius: 999px;
-    font-weight: 600;
-    margin-right: 10px;
-    margin-bottom: 10px;
-  }
-
-  .chip-approved { background: #dff5e8; color: #137a42; }
-  .chip-pending { background: #fff3cd; color: #8a6d00; }
-  .chip-rejected { background: #fde2e2; color: #b42318; }
-
-  .activity-card,
-  .request-card,
-  .directory-card,
-  .detail-card {
-    border: 1px solid #e8e8e8;
-    border-radius: 14px;
-    padding: 16px 18px;
-    margin-bottom: 12px;
-    background: #fff;
-  }
-
-  .filter-chip {
-    display: inline-block;
-    padding: 10px 16px;
-    border: 1px solid #ddd;
-    border-radius: 12px;
-    text-decoration: none;
-    color: #333;
-    margin-right: 10px;
-    margin-bottom: 12px;
-    background: #fff;
-  }
-
-  .filter-chip.active {
-    background: #f6f0e7;
-    border-color: #e7b16a;
-    color: #111;
-  }
-
-  .detail-label {
-    font-size: 0.85rem;
-    color: #6c757d;
-    display: block;
-    margin-bottom: 4px;
-  }
-
-  .detail-row {
-    margin-bottom: 14px;
-  }
-
-  @media (max-width: 992px) {
-    .admin-header {
-      position: static;
-      grid-template-columns: 1fr;
-      padding: 18px 16px 14px;
+  <style>
+    /* ── Base ─────────────────────────────────────────────────── */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
     }
 
-    .admin-page-title {
-      text-align: left;
-      margin-top: 8px;
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f0f2f5;
+      font-size: 14px;
+      color: #334155;
+      margin: 0;
     }
 
+    /* ── Flash ────────────────────────────────────────────────── */
     .flash-wrapper {
-      top: 14px;
+      position: fixed;
+      top: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 3000;
+      width: min(600px, 90%);
     }
 
-    .admin-layout {
-      grid-template-columns: 1fr;
-      margin-top: 18px;
+    /* ── Shell ────────────────────────────────────────────────── */
+    .admin-shell {
+      display: flex;
+      min-height: 100vh;
     }
 
+    /* ── Sidebar ──────────────────────────────────────────────── */
     .admin-sidebar {
-      position: static;
-      width: 100%;
-      height: auto;
-      border-right: none;
-      padding-right: 0;
-      overflow: visible;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 230px;
+      height: 100vh;
+      background: #0f172a;
+      display: flex;
+      flex-direction: column;
+      z-index: 1100;
+      overflow-y: auto;
     }
 
+    .admin-sidebar-brand {
+      padding: 24px 20px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      flex-shrink: 0;
+    }
+
+    .admin-sidebar-brand .brand-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: #f1f5f9;
+      letter-spacing: 0.01em;
+    }
+
+    .admin-sidebar-brand .brand-sub {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #475569;
+      margin-top: 3px;
+    }
+
+    .admin-nav {
+      flex: 1;
+      padding: 14px 10px;
+    }
+
+    .admin-sidebar-section {
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #334155;
+      padding: 16px 10px 5px;
+    }
+
+    .admin-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 7px;
+      text-decoration: none;
+      color: #94a3b8;
+      font-size: 13.5px;
+      font-weight: 400;
+      margin-bottom: 2px;
+      transition: background 0.12s, color 0.12s;
+    }
+
+    .admin-link i {
+      font-size: 15px;
+      width: 18px;
+      text-align: center;
+      flex-shrink: 0;
+      color: #475569;
+      transition: color 0.12s;
+    }
+
+    .admin-link:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: #e2e8f0;
+    }
+
+    .admin-link:hover i {
+      color: #94a3b8;
+    }
+
+    .admin-link.active {
+      background: rgba(13, 148, 136, 0.18);
+      color: #5eead4;
+      font-weight: 500;
+    }
+
+    .admin-link.active i {
+      color: #5eead4;
+    }
+
+    /* ── Main area ────────────────────────────────────────────── */
+    .admin-main {
+      margin-left: 230px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* ── Top bar ──────────────────────────────────────────────── */
+    .admin-topbar {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: #fff;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 0 36px;
+      height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .admin-topbar-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #111827;
+      margin: 0;
+    }
+
+    .admin-topbar-meta {
+      font-size: 11.5px;
+      color: #9ca3af;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 4px 10px;
+    }
+
+    /* ── Content wrapper ──────────────────────────────────────── */
     .admin-content {
-      margin-left: 0;
+      padding: 28px 32px;
+      flex: 1;
+      background: #f8fafc;
     }
-  }
-</style>
 
+    .admin-content-inner {
+      max-width: 1200px;
+    }
 
+    /* ── Shared styles used across all admin views ────────────── */
+    .activity-card,
+    .request-card,
+    .directory-card,
+    .detail-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      background: #fff;
+      font-size: 14px;
+    }
 
+    .filter-chip {
+      display: inline-block;
+      padding: 5px 14px;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      text-decoration: none;
+      color: #6b7280;
+      margin-right: 8px;
+      margin-bottom: 10px;
+      background: #fff;
+      font-size: 13px;
+      transition: 0.12s;
+    }
 
+    .filter-chip.active {
+      background: #f0fdfa;
+      border-color: #5eead4;
+      color: #0f766e;
+      font-weight: 500;
+    }
 
+    .detail-label {
+      font-size: 11px;
+      color: #9ca3af;
+      display: block;
+      margin-bottom: 3px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
 
+    .detail-row {
+      margin-bottom: 14px;
+    }
+
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 12px;
+    }
+
+    .chip-approved {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .chip-pending {
+      background: #fef9c3;
+      color: #854d0e;
+    }
+
+    .chip-rejected {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    /* ── Responsive ───────────────────────────────────────────── */
+    @media (max-width: 992px) {
+      .admin-sidebar {
+        position: static;
+        width: 100%;
+        height: auto;
+      }
+
+      .admin-main {
+        margin-left: 0;
+      }
+
+      .admin-content {
+        padding: 20px 16px;
+      }
+
+      .admin-topbar {
+        padding: 0 16px;
+      }
+    }
+  </style>
 </head>
+
 <body>
 
   <div class="flash-wrapper">
-    <% if (success && success.length > 0) { %>
-      <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+    <% if (success && success.length> 0) { %>
+      <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert" style="font-size:13.5px;">
         <%= success[0] %>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
       </div>
-    <% } %>
-
-    <% if (error && error.length > 0) { %>
-      <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
-        <%= error[0] %>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-      </div>
-    <% } %>
-
-    <% if (info && info.length > 0) { %>
-      <div class="alert alert-info alert-dismissible fade show shadow-sm" role="alert">
-        <%= info[0] %>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-      </div>
-    <% } %>
+      <% } %>
+        <% if (error && error.length> 0) { %>
+          <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert" style="font-size:13.5px;">
+            <%= error[0] %>
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+          <% } %>
+            <% if (info && info.length> 0) { %>
+              <div class="alert alert-info alert-dismissible fade show shadow-sm" role="alert"
+                style="font-size:13.5px;">
+                <%= info[0] %>
+                  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+              <% } %>
   </div>
 
   <div class="admin-shell">
-    <div class="admin-header">
-      <h1 class="admin-brand">Local Connect</h1>
-      <h2 class="admin-page-title"><%= title %></h2>
-    </div>
 
-    <div class="admin-layout">
-      <aside class="admin-sidebar">
+    <!-- SIDEBAR -->
+    <aside class="admin-sidebar">
+      <div class="admin-sidebar-brand">
+        <div class="brand-name">Local Connect</div>
+        <div class="brand-sub">Admin Panel</div>
+      </div>
+
+      <nav class="admin-nav">
+        <div class="admin-sidebar-section">Navigation</div>
+
         <a href="/admin" class="admin-link <%= activeAdminTab === 'dashboard' ? 'active' : '' %>">
-          <i class="bi bi-house-door"></i>
+          <i class="bi bi-grid-1x2"></i>
           <span>Dashboard</span>
         </a>
 
@@ -263,34 +329,52 @@
         </a>
 
         <a href="/admin/directory" class="admin-link <%= activeAdminTab === 'directory' ? 'active' : '' %>">
-          <i class="bi bi-folder2-open"></i>
+          <i class="bi bi-people"></i>
           <span>Directory</span>
         </a>
 
-        <a href="#" class="admin-link">
-          <i class="bi bi-gear"></i>
-          <span>Settings</span>
+        <a href="/admin/reports" class="admin-link <%= activeAdminTab === 'reports' ? 'active' : '' %>">
+          <i class="bi bi-flag"></i>
+          <span>Reports</span>
         </a>
+
+        <div class="admin-sidebar-section">Account</div>
 
         <a href="/logout" class="admin-link">
           <i class="bi bi-box-arrow-right"></i>
-          <span>Logout</span>
+          <span>Sign Out</span>
         </a>
-      </aside>
+      </nav>
+    </aside>
+
+    <!-- MAIN -->
+    <div class="admin-main">
+
+      <div class="admin-topbar">
+        <h1 class="admin-topbar-title">
+          <%= title %>
+        </h1>
+        <span class="admin-topbar-meta">
+          <%= new Date().toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short', year:'numeric' })
+            %>
+        </span>
+      </div>
 
       <main class="admin-content">
-        <%- body %>
+        <div class="admin-content-inner">
+          <%- body %>
+        </div>
       </main>
+
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
   <script>
     setTimeout(() => {
-      document.querySelectorAll('.alert').forEach(el => {
-        el.classList.remove('show');
-      });
+      document.querySelectorAll('.alert').forEach(el => el.classList.remove('show'));
     }, 3000);
   </script>
 </body>
+
 </html>

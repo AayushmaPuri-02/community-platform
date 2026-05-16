@@ -1,444 +1,1128 @@
-<div class="container py-4">
-  <p class="mb-3">
-    <a href="<%= backUrl %>" class="btn btn-outline-secondary btn-sm rounded-3">← Back</a>
-  </p>
+<style>
+  .comment-block {
+    background: #f8f9fb;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+  }
 
-  <div class="mb-4">
-    <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-3">
-      <div class="flex-grow-1">
-        <h1 class="mb-3 fw-bold" style="color:#04888D; font-size: 2rem;"><%= post.title %></h1>
+  .comment-block.pinned {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+  }
 
-        <div class="text-muted d-flex flex-wrap align-items-center gap-5" style="font-size: 1rem;">
-          <span class="d-inline-flex align-items-center">
-            <strong class="me-2 text-dark">Type:</strong>
-            <span class="text-capitalize"><%= post.type %></span>
-          </span>
+  .comment-author-link {
+    color: #04888D;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+  }
 
-          <span class="d-inline-flex align-items-center">
-            <strong class="me-2 text-dark">Posted by:</strong>
-            <a href="/users/<%= post.author._id %>" class="text-decoration-none text-dark fw-semibold">
-              <%= post.author.organizationName || post.author.fullName %>
-            </a>
-          </span>
+  .action-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #adb5bd;
+  }
 
-          <span class="d-inline-flex align-items-center">
-            <strong class="me-2 text-dark">Posted at:</strong>
-            <span>
-              <%= post.createdAt.toLocaleString("en-GB", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-                hour: "numeric",
-                minute: "2-digit",
-                hour12: true
-              }) %>
-            </span>
-          </span>
-        </div>
-      </div>
+  .action-btn:hover {
+    color: #495057;
+  }
+</style>
 
-      <% if (userId && post.author._id.toString() === userId.toString()) { %>
-        <div class="d-flex gap-2">
-          <a href="/posts/<%= post._id %>/edit" class="btn btn-light btn-sm rounded-circle border-0 text-primary shadow-sm" title="Edit">
-            <i class="bi bi-pencil"></i>
-          </a>
+<div class="container py-4" style="max-width:820px;">
 
-          <button
-            type="button"
-            class="btn btn-light btn-sm rounded-circle border-0 text-danger shadow-sm"
-            title="Delete"
-            data-bs-toggle="modal"
-            data-bs-target="#deletePostModal"
-          >
-            <i class="bi bi-trash"></i>
-          </button>
-        </div>
-      <% } %>
-    </div>
+  <p class="mb-4"><a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm">← Back</a></p>
 
-   <% if (post.images && post.images.length > 0) { %>
-  <div class="row g-3 mb-4">
-    <% post.images.forEach(img => { %>
-      <div class="<%= post.images.length === 1 ? 'col-12' : post.images.length === 2 ? 'col-md-6' : post.images.length === 3 ? 'col-md-4' : 'col-md-3' %>">
-        <img
-          src="<%= img.url %>"
-          alt="Post image"
-          class="w-100 rounded-4 shadow-sm"
-          style="height: 350px; object-fit: cover;"
-        >
-      </div>
-    <% }) %>
-  </div>
-<% } else if (post.postImage && post.postImage.url) { %>
-  <img
-    src="<%= post.postImage.url %>"
-    alt="Post image"
-    class="img-fluid rounded-4 mb-4 shadow-sm"
-    style="height: 350px; width: 100%; object-fit: cover;"
-  >
-<% } %>
-
-    <div class="mb-4">
-    <div class="text-secondary" style="line-height:1.95; font-size: 1.08rem; font-weight: 400; white-space: pre-line;">
-  <%= post.description %>
-</div>
-    </div>
-
-    <p class="mb-4" style="font-size: 1rem;">
-      <strong class="text-dark me-2">Tags:</strong>
-      <%= post.tags.length ? post.tags.join(", ") : "No tags" %>
-    </p>
-
-    <div class="d-flex align-items-center gap-2">
-      <% const liked = userId && post.likes.some(id => id.toString() === userId.toString()); %>
-      <button
-        type="button"
-        class="like-btn btn btn-sm <%= liked ? 'btn-danger' : 'btn-light' %> border-0 px-3 py-2"
-        data-id="<%= post._id %>">
-        ❤️ <span class="like-count"><%= post.likes.length %></span>
-      </button>
-
-      <% const isSaved = userSavedPosts && userSavedPosts.some(id => id.toString() === post._id.toString()); %>
-      <button
-        type="button"
-        class="save-btn btn btn-sm <%= isSaved ? 'btn-warning' : 'btn-light' %> border-0 px-3 py-2"
-        data-id="<%= post._id %>">
-        🔖
-      </button>
-    </div>
-  </div>
-
-  <!-- COMMENTS -->
-  <div class="card border-0 shadow-sm rounded-4 mt-4 mb-5">
+  <div class="card border-0 shadow-sm rounded-4 mb-4">
     <div class="card-body p-4">
-      <h4 class="fw-bold mb-4" style="font-size: 1.25rem;">
-        <i class="bi bi-chat-left-dots me-2"></i>Comments
-      </h4>
 
-      <form action="/posts/<%= post._id %>/comments" method="POST" class="mb-4" id="createCommentForm">
-        <div class="mb-2">
-          <textarea
-            id="newCommentText"
-            name="text"
-            class="form-control rounded-3"
-            placeholder="Write a comment..."
-            style="height: 90px; font-size: 0.95rem;"
-            required
-          ></textarea>
-          <div class="form-text">Maximum 100 words.</div>
-          <div class="invalid-feedback">
-            Comment must not exceed 100 words.
+      <div class="d-flex justify-content-between align-items-start mb-3">
+        <div class="d-flex align-items-center gap-3">
+          <a href="/users/<%= post.author._id %>">
+            <img src="<%= post.author.profileImage || '/images/default-avatar.png' %>"
+              alt="<%= post.author.communityName || post.author.organizationName || post.author.fullName %>"
+              class="rounded-circle border" style="width:40px; height:40px; object-fit:cover;">
+          </a>
+          <div>
+            <a href="/users/<%= post.author._id %>" class="fw-semibold text-dark text-decoration-none"
+              style="font-size:14px;">
+              <%= post.author.communityName || post.author.organizationName || post.author.fullName %>
+            </a>
+            <div class="text-muted" style="font-size:11.5px;">
+              <% var _diff=Date.now() - new Date(post.createdAt).getTime(); var _mins=Math.floor(_diff / 60000); var
+                _hrs=Math.floor(_diff / 3600000); var _timeStr; if (_mins < 1) _timeStr='just now' ; else if (_mins <
+                60) _timeStr=_mins + ' min ago' ; else if (_hrs < 24) _timeStr=_hrs + ' hour' + (_hrs===1 ? '' : 's' )
+                + ' ago' ; else _timeStr=new Date(post.createdAt).toLocaleDateString('en-GB', { day:'numeric',
+                month:'long', year:'numeric' }); %>
+                <%= _timeStr %>
+            </div>
           </div>
         </div>
-        <div class="text-end">
-          <button type="submit" class="btn btn-success btn-sm px-4 rounded-pill">Post</button>
-        </div>
-      </form>
+        <% if (userId && post.author._id.toString()===userId.toString()) { %>
+          <div class="d-flex gap-2 ms-3">
+            <a href="/posts/<%= post._id %>/edit" class="btn btn-sm btn-light border" title="Edit"><i
+                class="bi bi-pencil"></i></a>
+            <button type="button" class="btn btn-sm btn-light border text-danger" title="Delete" data-bs-toggle="modal"
+              data-bs-target="#deletePostModal"><i class="bi bi-trash"></i></button>
+          </div>
+          <% } %>
+      </div>
 
-      <div class="comment-list">
-        <% if (comments.length === 0) { %>
-          <p class="text-muted text-center py-3" style="font-size: 0.95rem;">No comments yet.</p>
+      <h1 class="fw-bold mb-3" style="color:#04888D; font-size:1.5rem;">
+        <%= post.title %>
+      </h1>
+
+      <% if (post.type==="volunteer" ) { %>
+        <div class="mb-4 p-3 bg-light rounded-3 border" style="font-size:0.9rem;">
+          <% if (post.volunteerDate) { %>
+            <span class="me-3"><i class="bi bi-calendar-event me-1"></i>
+              <strong>Date:</strong>
+              <%= new Date(post.volunteerDate).toLocaleDateString("en-GB", { day:"numeric", month:"long", year:"numeric"
+                }) %>
+            </span>
+            <% } %>
+              <span>
+                <i class="bi bi-people me-1"></i>
+                <strong>Volunteers:</strong>
+                <% var activeVolCount=post.volunteers.filter(function(v){ return v.status==='pending' ||
+                  v.status==='attended' ; }).length; %>
+                  <%= activeVolCount %>
+                    <% if (post.maxVolunteers> 0) { %> / <%= post.maxVolunteers %>
+                        <% } %>
+              </span>
+        </div>
         <% } %>
 
-        <% comments.forEach(comment => { %>
-          <div class="py-3 border-bottom">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-              <div class="d-flex align-items-center flex-wrap gap-3">
-                <a href="/users/<%= comment.author._id %>" class="fw-bold text-decoration-none" style="font-size: 0.95rem; color: #333;">
-                  <%= comment.author.organizationName || comment.author.fullName %>
-                </a>
-
-                <% if (comment.isPinned) { %>
-                  <span class="text-warning" style="font-size: 0.85rem;" title="Pinned comment">
-                    <i class="bi bi-pin-angle-fill"></i>
+          <% if (post.type==="alert" ) { %>
+            <div class="mb-4 p-3 rounded-3 border"
+              style="font-size:0.9rem; background:#fff8f0; border-color:#fde68a !important;">
+              <% var alertStatus=post.alertStatus==='Resolved' ? 'Resolved' : 'Active' ; %>
+                <span class="me-3">
+                  <% if (alertStatus==='Resolved' ) { %>
+                    <span class="badge bg-secondary">Resolved</span>
+                    <% } else { %>
+                      <span class="badge bg-success">Active</span>
+                      <% } %>
+                </span>
+                <% if (post.alertCategory) { %>
+                  <span class="me-3">
+                    <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>
+                    <strong>Category:</strong>
+                    <%= post.alertCategory %>
                   </span>
+                  <% } %>
+                    <% if (post.locationName) { %>
+                      <% var _displayLocation=post.locationName; var _plusCodeRe=/^[A-Z0-9]{4,}\+[A-Z0-9]{2,}[^,]*,\s*/;
+                        if (_plusCodeRe.test(_displayLocation)) { var _stripped=_displayLocation.replace(_plusCodeRe, ''
+                        ).trim(); if (_stripped.split(',').length>= 2) { _displayLocation = _stripped; } } %>
+                        <span class="me-3">
+                          <i class="bi bi-geo-alt-fill text-danger me-1"></i>
+                          <strong>Location:</strong>
+                          <%= _displayLocation %>
+                        </span>
+                        <% } %>
+                          <% if (post.alertRadius) { %>
+                            <span>
+                              <i class="bi bi-broadcast me-1 text-primary"></i>
+                              <strong>Affected Radius:</strong>
+                              <%= post.alertRadius %>
+                            </span>
+                            <% } %>
+            </div>
+            <% if (userId && post.author._id.toString()===userId.toString() && alertStatus==='Active' ) { %>
+              <div class="mb-3">
+                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-bs-toggle="modal"
+                  data-bs-target="#resolveAlertModal">
+                  <i class="bi bi-check2-circle me-1"></i>Mark as Resolved
+                </button>
+              </div>
+              <% } %>
+                <% if (post.latitude && post.longitude) { %>
+                  <div id="alertDetailMap" class="mb-4"
+                    style="height:200px; border-radius:8px; overflow:hidden; border:1px solid #e2e8f0;"></div>
+                  <% } %>
+                    <% } %>
+
+                      <% if (post.images && post.images.length> 0) { %>
+                        <% if (post.images.length===1) { %>
+                          <div class="mb-4">
+                            <img src="<%= post.images[0].url %>" alt="Post image" class="w-100 rounded-3"
+                              style="max-height:420px; object-fit:contain; background:#f1f3f5;">
+                          </div>
+                          <% } else { %>
+                            <div id="carousel-detail-<%= post._id %>" class="carousel slide mb-4" data-bs-ride="false"
+                              data-bs-wrap="false">
+                              <div class="carousel-inner rounded-3" style="max-height:420px;">
+                                <% post.images.forEach(function(img, idx) { %>
+                                  <div class="carousel-item <%= idx === 0 ? 'active' : '' %>">
+                                    <img src="<%= img.url %>" class="d-block w-100 rounded-3"
+                                      style="max-height:420px; object-fit:contain; background:#f1f3f5;"
+                                      alt="Post image <%= idx + 1 %>">
+                                  </div>
+                                  <% }); %>
+                              </div>
+                              <button class="carousel-control-prev d-none" type="button"
+                                data-bs-target="#carousel-detail-<%= post._id %>" data-bs-slide="prev"
+                                style="width:40px;">
+                                <span class="carousel-control-prev-icon"
+                                  style="filter:invert(1) brightness(0.4);"></span>
+                              </button>
+                              <button class="carousel-control-next" type="button"
+                                data-bs-target="#carousel-detail-<%= post._id %>" data-bs-slide="next"
+                                style="width:40px;">
+                                <span class="carousel-control-next-icon"
+                                  style="filter:invert(1) brightness(0.4);"></span>
+                              </button>
+                              <div class="carousel-indicators" style="bottom:-20px;">
+                                <% post.images.forEach(function(img, idx) { %>
+                                  <button type="button" data-bs-target="#carousel-detail-<%= post._id %>"
+                                    data-bs-slide-to="<%= idx %>" class="<%= idx === 0 ? 'active' : '' %>"
+                                    style="background:#adb5bd; width:7px; height:7px; border-radius:50%; border:none;">
+                                  </button>
+                                  <% }); %>
+                              </div>
+                            </div>
+                            <div style="height:12px;"></div>
+                            <% } %>
+                              <% } else if (post.postImage && post.postImage.url) { %>
+                                <img src="<%= post.postImage.url %>" alt="Post image" class="w-100 rounded-3 mb-4"
+                                  style="max-height:420px; object-fit:contain; background:#f1f3f5;">
+                                <% } %>
+
+                                  <div class="text-secondary mb-3" style="line-height:1.8; font-size:1rem;">
+                                    <%- renderedDescription %>
+                                  </div>
+
+                                  <% if (post.tags && post.tags.length> 0) { %>
+                                    <div class="mb-4">
+                                      <% post.tags.forEach(function(tag) { %>
+                                        <span class="badge bg-light text-primary border rounded-pill me-1">#<%= tag %>
+                                        </span>
+                                        <% }); %>
+                                    </div>
+                                    <% } %>
+
+                                      <div class="d-flex align-items-center gap-2 pt-3 border-top flex-wrap">
+                                        <% var liked=false; if (userId) { for (var i=0; i < post.likes.length; i++) { if
+                                          (post.likes[i].toString()===userId.toString()) { liked=true; break; } } } %>
+                                          <button type="button" class="like-btn btn btn-sm btn-light border px-3"
+                                            data-id="<%= post._id %>">
+                                            <i class="bi <%= liked ? 'bi-heart-fill' : 'bi-heart' %>"
+                                              style="<%= liked ? 'color:#dc3545;' : '' %>"></i>
+                                            <span class="like-count ms-1">
+                                              <%= post.likes.length %>
+                                            </span>
+                                          </button>
+
+                                          <a href="#comments"
+                                            class="btn btn-sm btn-light border px-3 text-decoration-none text-muted">
+                                            <i class="bi bi-chat-dots"></i>
+                                            <span class="ms-1">
+                                              <%= comments.length %>
+                                            </span>
+                                          </a>
+
+                                          <% var isSaved=false; if (userSavedPosts) { for (var j=0; j <
+                                            userSavedPosts.length; j++) { if
+                                            (userSavedPosts[j].toString()===post._id.toString()) { isSaved=true; break;
+                                            } } } %>
+                                            <button type="button" class="save-btn btn btn-sm btn-light border px-3"
+                                              data-id="<%= post._id %>">
+                                              <i class="bi <%= isSaved ? 'bi-bookmark-fill' : 'bi-bookmark' %>"
+                                                style="<%= isSaved ? 'color:#f59e0b;' : '' %>"></i>
+                                            </button>
+
+                                            <% if (userId && post.author._id.toString() !==userId.toString()) { %>
+                                              <button type="button" class="btn btn-sm btn-light border px-3 text-danger"
+                                                data-bs-toggle="modal" data-bs-target="#reportModal"
+                                                title="Report this post">
+                                                <i class="bi bi-flag"></i>
+                                              </button>
+                                              <% } %>
+
+                                                <% if (userId) { %>
+                                                  <button type="button" class="btn btn-sm btn-light border px-3"
+                                                    data-bs-toggle="modal" data-bs-target="#shareModal"
+                                                    title="Share this post">
+                                                    <i class="bi bi-share"></i>
+                                                  </button>
+                                                  <% } %>
+
+                                                    <!-- Type badge bottom-right -->
+                                                    <% var _bClass='bg-secondary' ; %>
+                                                      <% if (post.type==='alert' ) { _bClass='bg-danger' ; } %>
+                                                        <% if (post.type==='volunteer' ) { _bClass='bg-success' ; } %>
+                                                          <% if (post.type==='event' ) { _bClass='bg-primary' ; } %>
+                                                            <% if (post.type==='notice' ) { _bClass='bg-secondary' ; }
+                                                              %>
+                                                              <% if (post.type==='training' ) { _bClass='bg-info' ; } %>
+                                                                <% if (post.type==='communityUpdate' ) {
+                                                                  _bClass='bg-warning text-dark' ; } %>
+                                                                  <% var _bLabel=post.type==='communityUpdate'
+                                                                    ? 'Update' :
+                                                                    post.type.charAt(0).toUpperCase()+post.type.slice(1);
+                                                                    %>
+                                                                    <span
+                                                                      class="ms-auto badge <%= _bClass %> rounded-pill"
+                                                                      style="font-size:0.72rem;">
+                                                                      <%= _bLabel %>
+                                                                    </span>
+                                      </div>
+
+    </div>
+  </div>
+
+  <% if (post.type==="volunteer" ) { %>
+
+    <% var alreadyJoined=false; var myRejected=false; var _activeVolCount=post.volunteers.filter(function(v){ return
+      v.status==='pending' || v.status==='attended' ; }).length; var slotsFull=post.maxVolunteers> 0 && _activeVolCount
+      >= post.maxVolunteers;
+      if (userId) {
+      for (var vi = 0; vi < post.volunteers.length; vi++) { if (post.volunteers[vi].user &&
+        post.volunteers[vi].user.toString()===userId.toString()) { if (post.volunteers[vi].status==='rejected' ) {
+        myRejected=true; } else { alreadyJoined=true; } break; } } } var isAuthor=userId &&
+        post.author._id.toString()===userId.toString(); %>
+
+        <% if (userId && !isAuthor) { %>
+          <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-body p-4">
+              <h5 class="fw-bold mb-3">Volunteer for this Post</h5>
+              <% if (alreadyJoined) { var myEntry=null; for (var vi2=0; vi2 < post.volunteers.length; vi2++) { if
+                (post.volunteers[vi2].user && post.volunteers[vi2].user.toString()===userId.toString()) {
+                myEntry=post.volunteers[vi2]; break; } } var myStatus=myEntry ? (myEntry.status || (myEntry.attended
+                ? 'attended' : 'pending' )) : 'pending' ; %>
+                <% if (myStatus==='attended' ) { %>
+                  <span class="badge bg-success px-3 py-2" style="font-size:0.9rem;">
+                    <i class="bi bi-check-circle me-1"></i> Attended
+                  </span>
+                  <% } else if (myStatus==='rejected' ) { %>
+                    <div>
+                      <span class="badge bg-danger px-3 py-2 mb-2" style="font-size:0.9rem;">
+                        <i class="bi bi-x-circle me-1"></i> Application Rejected
+                      </span>
+                      <% if (myEntry && myEntry.rejectionReason) { %>
+                        <p class="text-muted small mt-2 mb-0">
+                          <strong>Reason:</strong>
+                          <%= myEntry.rejectionReason %>
+                        </p>
+                        <% } %>
+                    </div>
+                    <% } else { %>
+                      <% var canCancel=false; if (post.volunteerDate) { var cutoffDate=new Date(post.volunteerDate);
+                        cutoffDate.setDate(cutoffDate.getDate() - 2); cutoffDate.setHours(0, 0, 0, 0); var todayDate=new
+                        Date(); todayDate.setHours(0, 0, 0, 0); canCancel=todayDate < cutoffDate; } %>
+                        <div class="d-flex align-items-center gap-3 flex-wrap">
+                          <span class="badge bg-success px-3 py-2" style="font-size:0.9rem;">
+                            <i class="bi bi-check-circle me-1"></i> Already Joined
+                          </span>
+                          <% if (canCancel) { %>
+                            <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-3"
+                              data-bs-toggle="modal" data-bs-target="#cancelVolunteerModal">
+                              Cancel Signup
+                            </button>
+                            <% } else if (post.volunteerDate) { %>
+                              <small class="text-muted">Cancellation not available within 2 days of the event.</small>
+                              <% } %>
+                        </div>
+                        <% } %>
+                          <% } else if (myRejected) { %>
+                            <% var myRejEntry=null; for (var vir=0; vir < post.volunteers.length; vir++) { if
+                              (post.volunteers[vir].user && post.volunteers[vir].user.toString()===userId.toString()) {
+                              myRejEntry=post.volunteers[vir]; break; } } %>
+                              <div class="alert alert-danger py-2 px-3 mb-0" style="font-size:0.9rem;">
+                                <i class="bi bi-x-circle me-1"></i>
+                                <strong>Your volunteer application was rejected.</strong>
+                                <% if (myRejEntry && myRejEntry.rejectionReason) { %>
+                                  <div class="mt-1 text-danger" style="font-size:0.85rem;">
+                                    <strong>Reason:</strong>
+                                    <%= myRejEntry.rejectionReason %>
+                                  </div>
+                                  <% } %>
+                              </div>
+                              <% } else if (slotsFull) { %>
+                                <span class="badge bg-secondary px-3 py-2" style="font-size:0.9rem;">Volunteer limit
+                                  reached</span>
+                                <% } else { %>
+                                  <button class="btn btn-success px-4 rounded-pill" data-bs-toggle="modal"
+                                    data-bs-target="#volunteerModal">
+                                    <i class="bi bi-hand-thumbs-up me-1"></i> Join as Volunteer
+                                  </button>
+                                  <% } %>
+            </div>
+          </div>
+          <% } %>
+
+            <% if (isAuthor) { %>
+              <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                  <p class="text-muted small mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Manage volunteers from your <a
+                      href="<%= role === 'organization' ? '/org-dashboard' : '/community-dashboard' %>"
+                      class="text-decoration-none" style="color:#04888D;">Dashboard</a>.
+                  </p>
+                </div>
+              </div>
+              <% } %>
+
                 <% } %>
 
-                <span class="text-muted" style="font-size: 0.85rem;">
-                  <%= comment.createdAt.toLocaleDateString('en-GB', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric'
-                  }) %>
-                </span>
+                  <div class="card border-0 shadow-sm rounded-4 mb-5" id="comments">
+                    <div class="card-body p-4">
 
-                <div class="ms-3 d-flex gap-4 align-items-center">
-                  <% if (userId && post.author._id.toString() === userId.toString()) { %>
-                    <form action="/comments/<%= comment._id %>/pin" method="POST" style="display:inline;">
-                      <button
-                        type="submit"
-                        class="btn btn-link p-0 border-0 text-decoration-none"
-                        style="font-size: 0.9rem; color: #6c757d;"
-                        title="<%= comment.isPinned ? 'Unpin comment' : 'Pin comment' %>"
-                      >
-                        <i class="bi <%= comment.isPinned ? 'bi-pin-angle-fill text-warning' : 'bi-pin-angle' %>"></i>
-                      </button>
-                    </form>
-                  <% } %>
+                      <h5 class="fw-bold mb-4"><i class="bi bi-chat-left-dots me-2" style="color:#04888D;"></i>Comments
+                        (<%= comments.length %>)</h5>
 
-                  <% if (userId && comment.author._id.toString() === userId.toString()) { %>
-                    <button
-                      type="button"
-                      class="btn btn-link p-0 border-0 text-decoration-none"
-                      style="font-size: 1rem; color: #04888D;"
-                      title="Edit comment"
-                      data-bs-toggle="modal"
-                      data-bs-target="#editCommentModal"
-                      data-comment-id="<%= comment._id %>"
-                      data-comment-text="<%- comment.text.replace(/"/g, '&quot;') %>"
-                    >
-                      <i class="bi bi-pencil-square"></i>
+                      <form action="/posts/<%= post._id %>/comments" method="POST" class="mb-4" id="createCommentForm">
+                        <label for="newCommentText" class="form-label text-muted small">Add a comment</label>
+                        <textarea id="newCommentText" name="text" class="form-control" rows="3"
+                          placeholder="Write a comment..." required></textarea>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                          <span class="form-text">Max 100 words.</span>
+                          <button type="submit" class="btn btn-primary btn-sm px-4 rounded-pill">Post</button>
+                        </div>
+                        <div class="invalid-feedback">Comment must not exceed 100 words.</div>
+                      </form>
+
+                      <% if (comments.length===0) { %>
+                        <p class="text-muted text-center py-3">No comments yet.</p>
+                        <% } %>
+
+                          <% comments.forEach(function(comment) { var replies=repliesByComment[comment._id.toString()]
+                            || []; %>
+                            <div class="comment-block <%= comment.isPinned ? 'pinned' : '' %>">
+                              <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                  <a href="/users/<%= comment.author._id %>" class="comment-author-link">
+                                    <%= comment.author.communityName || comment.author.organizationName ||
+                                      comment.author.fullName %>
+                                  </a>
+                                  <% if (comment.isPinned) { %>
+                                    <span class="badge ms-2"
+                                      style="background:#fef3c7; color:#92400e; font-size:0.7rem;">Pinned</span>
+                                    <% } %>
+                                      <span class="text-muted ms-2" style="font-size:0.75rem;">
+                                        <%= comment.createdAt.toLocaleDateString('en-GB', { day:'numeric',
+                                          month:'short', year:'numeric' }) %>
+                                      </span>
+                                </div>
+                                <div class="d-flex gap-3 align-items-center">
+                                  <% if (userId && post.author._id.toString()===userId.toString()) { %>
+                                    <form action="/comments/<%= comment._id %>/pin" method="POST"
+                                      style="display:inline; margin:0;">
+                                      <button type="submit" class="action-btn"
+                                        title="<%= comment.isPinned ? 'Unpin' : 'Pin' %>">
+                                        <i
+                                          class="bi <%= comment.isPinned ? 'bi-pin-angle-fill text-warning' : 'bi-pin-angle' %>"></i>
+                                      </button>
+                                    </form>
+                                    <% } %>
+                                      <% if (userId && comment.author._id.toString()===userId.toString()) { %>
+                                        <button type="button" class="action-btn" title="Edit" data-bs-toggle="modal"
+                                          data-bs-target="#editCommentModal" data-comment-id="<%= comment._id %>"
+                                          data-comment-text="<%= encodeURIComponent(comment.text) %>">
+                                          <i class="bi bi-pencil-square" style="color:#04888D;"></i>
+                                        </button>
+                                        <% } %>
+                                          <% if (userId && (comment.author._id.toString()===userId.toString() ||
+                                            post.author._id.toString()===userId.toString())) { %>
+                                            <button type="button" class="action-btn text-danger" title="Delete"
+                                              data-bs-toggle="modal" data-bs-target="#deleteCommentModal"
+                                              data-comment-id="<%= comment._id %>">
+                                              <i class="bi bi-trash"></i>
+                                            </button>
+                                            <% } %>
+                                              <% if (userId) { %>
+                                                <button type="button" class="action-btn" title="Reply"
+                                                  onclick="toggleReplyForm('replyForm-<%= comment._id %>')">
+                                                  <i class="bi bi-reply" style="color:#04888D;"></i>
+                                                </button>
+                                                <% } %>
+                                </div>
+                              </div>
+
+                              <p class="mb-0 mt-2 text-secondary" style="font-size:0.95rem; line-height:1.6;">
+                                <%= comment.text %>
+                              </p>
+
+                              <% /* Inline reply form — hidden by default */%>
+                                <% if (userId) { %>
+                                  <div id="replyForm-<%= comment._id %>" style="display:none;" class="mt-2">
+                                    <form action="/posts/<%= post._id %>/comments/<%= comment._id %>/reply"
+                                      method="POST">
+                                      <div class="input-group input-group-sm">
+                                        <input type="text" name="text" class="form-control rounded-start"
+                                          placeholder="Write a reply… (max 100 words)" required>
+                                        <button type="submit" class="btn btn-success btn-sm">Reply</button>
+                                      </div>
+                                    </form>
+                                  </div>
+                                  <% } %>
+
+                                    <% /* Replies section */%>
+                                      <% if (replies.length> 0) { %>
+                                        <div class="mt-2">
+                                          <button type="button" class="btn btn-link btn-sm p-0 text-muted"
+                                            style="font-size:0.8rem; text-decoration:none;"
+                                            onclick="toggleReplies('replies-<%= comment._id %>', this)">
+                                            <i class="bi bi-chevron-down me-1"></i>
+                                            <%= replies.length %>
+                                              <%= replies.length===1 ? 'reply' : 'replies' %>
+                                          </button>
+                                          <div id="replies-<%= comment._id %>" style="display:none;"
+                                            class="mt-2 ps-3 border-start border-2">
+                                            <% replies.forEach(function(reply) { %>
+                                              <div class="comment-block mb-2" style="background:#f0f4f8;">
+                                                <div class="d-flex justify-content-between align-items-start">
+                                                  <div>
+                                                    <a href="/users/<%= reply.author._id %>"
+                                                      class="comment-author-link">
+                                                      <%= reply.author.communityName || reply.author.organizationName ||
+                                                        reply.author.fullName %>
+                                                    </a>
+                                                    <span class="text-muted ms-2" style="font-size:0.75rem;">
+                                                      <%= reply.createdAt.toLocaleDateString('en-GB', { day:'numeric',
+                                                        month:'short', year:'numeric' }) %>
+                                                    </span>
+                                                  </div>
+                                                  <div class="d-flex gap-3 align-items-center">
+                                                    <% if (userId && reply.author._id.toString()===userId.toString()) {
+                                                      %>
+                                                      <button type="button" class="action-btn" title="Edit"
+                                                        data-bs-toggle="modal" data-bs-target="#editCommentModal"
+                                                        data-comment-id="<%= reply._id %>"
+                                                        data-comment-text="<%= encodeURIComponent(reply.text) %>">
+                                                        <i class="bi bi-pencil-square" style="color:#04888D;"></i>
+                                                      </button>
+                                                      <% } %>
+                                                        <% if (userId &&
+                                                          (reply.author._id.toString()===userId.toString() ||
+                                                          post.author._id.toString()===userId.toString())) { %>
+                                                          <button type="button" class="action-btn text-danger"
+                                                            title="Delete" data-bs-toggle="modal"
+                                                            data-bs-target="#deleteCommentModal"
+                                                            data-comment-id="<%= reply._id %>">
+                                                            <i class="bi bi-trash"></i>
+                                                          </button>
+                                                          <% } %>
+                                                            <% if (userId) { %>
+                                                              <button type="button" class="action-btn" title="Reply"
+                                                                onclick="toggleReplyForm('replyForm-<%= comment._id %>')">
+                                                                <i class="bi bi-reply" style="color:#04888D;"></i>
+                                                              </button>
+                                                              <% } %>
+                                                  </div>
+                                                </div>
+                                                <p class="mb-0 mt-2 text-secondary"
+                                                  style="font-size:0.92rem; line-height:1.6;">
+                                                  <%= reply.text %>
+                                                </p>
+                                              </div>
+                                              <% }); %>
+                                          </div>
+                                        </div>
+                                        <% } %>
+
+                            </div>
+                            <% }); %>
+
+                    </div>
+                  </div>
+
+</div>
+
+<% if (userId && post.author._id.toString()===userId.toString()) { %>
+  <% if (post.type==='alert' && post.alertStatus !=='Resolved' ) { %>
+    <div class="modal fade" id="resolveAlertModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 shadow">
+          <div class="modal-header border-0 pb-0">
+            <h5 class="modal-title fw-bold"><i class="bi bi-check2-circle me-2 text-success"></i>Mark Alert as Resolved
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body pt-2">
+            <p class="mb-0">Are you sure this alert is resolved? It will remain visible for 5 days and then disappear
+              from the alerts map.</p>
+          </div>
+          <div class="modal-footer border-0">
+            <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+            <form action="/posts/<%= post._id %>/resolve" method="POST" class="m-0">
+              <button type="submit" class="btn btn-success rounded-pill px-4">Confirm Resolved</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    <% } %>
+
+      <div class="modal fade" id="deletePostModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content border-0 rounded-4 shadow">
+            <div class="modal-header border-0 pb-0">
+              <h5 class="modal-title fw-bold text-danger">Delete Post</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">Are you sure you want to delete this post? This cannot be undone.</div>
+            <div class="modal-footer border-0">
+              <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+              <form action="/posts/<%= post._id %>/delete" method="POST" class="m-0">
+                <button type="submit" class="btn btn-danger rounded-pill px-4">Delete</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+      <% } %>
+
+        <div class="modal fade" id="editCommentModal" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 rounded-4 shadow">
+              <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Edit Comment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <form id="sharedEditCommentForm" method="POST">
+                <div class="modal-body">
+                  <textarea id="sharedEditCommentTextarea" name="text" class="form-control" rows="4"
+                    required></textarea>
+                  <div class="form-text">Max 100 words.</div>
+                  <div class="invalid-feedback">Comment must not exceed 100 words.</div>
+                </div>
+                <div class="modal-footer border-0">
+                  <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                  <button type="submit" class="btn btn-primary rounded-pill px-4">Update</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal fade" id="deleteCommentModal" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 rounded-4 shadow">
+              <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-danger">Delete Comment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">Are you sure you want to delete this comment? This cannot be undone.</div>
+              <div class="modal-footer border-0">
+                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                <form id="sharedDeleteCommentForm" method="POST" class="m-0">
+                  <button type="submit" class="btn btn-danger rounded-pill px-4">Delete</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="saveToast" style="position:fixed; bottom:24px; right:24px; z-index:9999; display:none;">
+          <div style="background:#222; color:#fff; padding:10px 18px; border-radius:8px; font-size:0.9rem;"
+            id="saveToastMsg"></div>
+        </div>
+
+        <!-- SHARE MODAL -->
+        <% if (userId) { %>
+          <div class="modal fade" id="shareModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" style="max-width:360px;">
+              <div class="modal-content border-0 rounded-4 shadow">
+                <div class="modal-header border-0 pb-0">
+                  <h5 class="modal-title fw-bold"><i class="bi bi-share me-2"></i>Share Post</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body pt-2 pb-3">
+
+                  <% /* Copy link */%>
+                    <button type="button" id="copyLinkBtn"
+                      class="btn btn-light border w-100 text-start d-flex align-items-center gap-3 mb-2 rounded-3 px-3 py-2">
+                      <i class="bi bi-link-45deg fs-5 text-muted"></i>
+                      <span>Copy link</span>
+                      <span id="copyLinkMsg" class="ms-auto text-success small" style="display:none;">Copied!</span>
                     </button>
-                  <% } %>
 
-                  <% if (userId && (comment.author._id.toString() === userId.toString() || post.author._id.toString() === userId.toString())) { %>
-                    <button
-                      type="button"
-                      class="btn btn-link p-0 border-0 text-decoration-none text-danger"
-                      style="font-size: 1rem;"
-                      title="Delete comment"
-                      data-bs-toggle="modal"
-                      data-bs-target="#deleteCommentModal"
-                      data-comment-id="<%= comment._id %>"
-                    >
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  <% } %>
+                    <% /* WhatsApp */%>
+                      <a id="whatsappShareBtn"
+                        href="https://wa.me/?text=<%= encodeURIComponent(post.title + ' — ' + 'https://localhost:3000/posts/' + post._id) %>"
+                        target="_blank" rel="noopener"
+                        class="btn btn-light border w-100 text-start d-flex align-items-center gap-3 mb-2 rounded-3 px-3 py-2 text-decoration-none text-dark">
+                        <i class="bi bi-whatsapp fs-5" style="color:#25d366;"></i>
+                        <span>Share to WhatsApp</span>
+                      </a>
+
+                      <% /* Send in message */%>
+                        <% if (userId) { %>
+                          <button type="button" id="openSendMsgBtn"
+                            class="btn btn-light border w-100 text-start d-flex align-items-center gap-3 rounded-3 px-3 py-2">
+                            <i class="bi bi-chat-dots fs-5 text-muted"></i>
+                            <span>Send in message</span>
+                          </button>
+                          <% } %>
+
                 </div>
               </div>
             </div>
-
-            <p class="mb-0 text-secondary" style="font-size: 0.95rem; line-height: 1.6;">
-              <%= comment.text %>
-            </p>
           </div>
-        <% }) %>
-      </div>
-    </div>
-  </div>
-</div>
 
-<!-- DELETE POST MODAL -->
-<% if (userId && post.author._id.toString() === userId.toString()) { %>
-  <div class="modal fade" id="deletePostModal" tabindex="-1" aria-labelledby="deletePostModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content border-0 rounded-4 shadow">
-        <div class="modal-header border-0 pb-0">
-          <h5 class="modal-title fw-bold text-danger" id="deletePostModalLabel">Delete Post</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-
-        <div class="modal-body pt-2">
-          <p class="mb-2" style="font-size: 1rem;">
-            Are you sure you want to delete this post?
-          </p>
-          <p class="text-muted mb-0" style="font-size: 0.95rem;">
-            This action cannot be undone.
-          </p>
-        </div>
-
-        <div class="modal-footer border-0">
-          <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-
-          <form action="/posts/<%= post._id %>/delete" method="POST" class="m-0">
-            <button type="submit" class="btn btn-danger rounded-pill px-4">Delete</button>
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
-<% } %>
-
-<!-- SHARED EDIT COMMENT MODAL -->
-<div class="modal fade" id="editCommentModal" tabindex="-1" aria-labelledby="editCommentModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 rounded-4 shadow">
-      <div class="modal-header border-0 pb-0">
-        <h5 class="modal-title fw-bold" id="editCommentModalLabel">Edit Comment</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-
-      <form id="sharedEditCommentForm" method="POST">
-        <div class="modal-body pt-2">
-          <textarea
-            id="sharedEditCommentTextarea"
-            name="text"
-            class="form-control rounded-3"
-            rows="4"
-            required
-          ></textarea>
-          <div class="form-text">Maximum 100 words.</div>
-          <div class="invalid-feedback">
-            Comment must not exceed 100 words.
+          <!-- SEND IN MESSAGE MODAL -->
+          <div class="modal fade" id="sendMsgModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
+              <div class="modal-content border-0 rounded-4 shadow">
+                <div class="modal-header border-0 pb-0">
+                  <h5 class="modal-title fw-bold"><i class="bi bi-chat-dots me-2"></i>Send in Message</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold small">Send to</label>
+                    <select id="msgRecipientSelect" class="form-select">
+                      <option value="">Loading recipients…</option>
+                    </select>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label fw-semibold small">Message</label>
+                    <input type="text" id="msgPreview" class="form-control" readonly
+                      value="Shared a post: <%= post.title %> — <%= 'https://localhost:3000/posts/' + post._id %>">
+                  </div>
+                  <div id="sendMsgError" class="text-danger small mb-2" style="display:none;"></div>
+                </div>
+                <div class="modal-footer border-0">
+                  <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                  <button type="button" id="sendMsgConfirmBtn" class="btn btn-success rounded-pill px-4">Send</button>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+          <% } %>
 
-        <div class="modal-footer border-0">
-          <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary rounded-pill px-4">Update</button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
+            <!-- REPORT MODAL -->
+            <% if (userId && post.author._id.toString() !==userId.toString()) { %>
+              <div class="modal fade" id="reportModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                  <div class="modal-content border-0 rounded-4 shadow">
+                    <div class="modal-header border-0 pb-0">
+                      <h5 class="modal-title fw-bold"><i class="bi bi-flag me-2 text-danger"></i>Report Post</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form action="/posts/<%= post._id %>/report" method="POST">
+                      <div class="modal-body">
+                        <p class="text-muted small mb-3">
+                          Help us keep the community safe. Select a reason for reporting this post.
+                        </p>
+                        <div class="mb-3">
+                          <label class="form-label fw-semibold">Reason <span class="text-danger">*</span></label>
+                          <select name="reason" class="form-select" required>
+                            <option value="">— Select a reason —</option>
+                            <option value="spam">Spam</option>
+                            <option value="misinformation">Misinformation</option>
+                            <option value="harassment">Harassment</option>
+                            <option value="hate_speech">Hate Speech</option>
+                            <option value="scam_fraud">Scam / Fraud</option>
+                            <option value="inappropriate">Inappropriate Content</option>
+                          </select>
+                        </div>
+                        <div class="mb-1">
+                          <label class="form-label fw-semibold">Additional Note <span
+                              class="text-muted fw-normal">(optional)</span></label>
+                          <input type="text" id="reportNoteInput" name="note" class="form-control"
+                            placeholder="Brief note (max 10 words)" autocomplete="off">
+                          <div class="d-flex justify-content-between align-items-center mt-1">
+                            <div id="reportNoteError" class="text-danger small" style="display:none;">Maximum 10 words
+                              allowed.</div>
+                            <span id="reportNoteCount" class="text-muted ms-auto" style="font-size:0.75rem;">0 / 10
+                              words</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-light rounded-pill px-4"
+                          data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" id="reportSubmitBtn" class="btn btn-danger rounded-pill px-4">Submit
+                          Report</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+              <% } %>
 
-<!-- SHARED DELETE COMMENT MODAL -->
-<div class="modal fade" id="deleteCommentModal" tabindex="-1" aria-labelledby="deleteCommentModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 rounded-4 shadow">
-      <div class="modal-header border-0 pb-0">
-        <h5 class="modal-title fw-bold text-danger" id="deleteCommentModalLabel">Delete Comment</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
+                <!-- CANCEL VOLUNTEER MODAL -->
+                <% if (post.type==="volunteer" && userId && !isAuthor) { %>
+                  <div class="modal fade" id="cancelVolunteerModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                      <div class="modal-content border-0 rounded-4 shadow">
+                        <div class="modal-header border-0 pb-0">
+                          <h5 class="modal-title fw-bold text-danger">Cancel Volunteer Signup</h5>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                          Are you sure you want to cancel your volunteer signup for this post? This cannot be undone.
+                        </div>
+                        <div class="modal-footer border-0">
+                          <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Keep
+                            Signup</button>
+                          <form action="/posts/<%= post._id %>/volunteer/cancel" method="POST" class="m-0">
+                            <button type="submit" class="btn btn-danger rounded-pill px-4">Yes, Cancel</button>
+                          </form>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <% } %>
 
-      <div class="modal-body pt-2">
-        <p class="mb-2" style="font-size: 1rem;">
-          Are you sure you want to delete this comment?
-        </p>
-        <p class="text-muted mb-0" style="font-size: 0.95rem;">
-          This action cannot be undone.
-        </p>
-      </div>
+                    <!-- VOLUNTEER SIGNUP MODAL -->
+                    <% if (post.type==="volunteer" && userId && post.author._id.toString() !==userId.toString()) { %>
+                      <div class="modal fade" id="volunteerModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                          <div class="modal-content border-0 rounded-4 shadow">
+                            <div class="modal-header border-0 pb-0">
+                              <h5 class="modal-title fw-bold">Sign Up as Volunteer</h5>
+                              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <form action="/posts/<%= post._id %>/volunteer" method="POST">
+                              <div class="modal-body">
+                                <div class="mb-3">
+                                  <label class="form-label fw-semibold">Full Name <span
+                                      class="text-danger">*</span></label>
+                                  <input type="text" name="fullName" class="form-control" placeholder="Your full name"
+                                    value="<%= fullName || '' %>" required>
+                                </div>
+                                <div class="mb-3">
+                                  <label class="form-label fw-semibold">Phone Number <span
+                                      class="text-danger">*</span></label>
+                                  <input type="text" name="phone" class="form-control" placeholder="e.g. 9812345678"
+                                    required>
+                                  <div class="form-text">Nepal mobile number starting with 97 or 98, 10 digits.</div>
+                                </div>
+                                <div class="mb-3">
+                                  <label class="form-label fw-semibold">Note <span
+                                      class="text-muted fw-normal">(optional)</span></label>
+                                  <textarea name="note" class="form-control" rows="2"
+                                    placeholder="Any message for the organizer"></textarea>
+                                </div>
+                              </div>
+                              <div class="modal-footer border-0">
+                                <button type="button" class="btn btn-light rounded-pill px-4"
+                                  data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-success rounded-pill px-4">Confirm Signup</button>
+                              </div>
+                            </form>
+                          </div>
+                        </div>
+                      </div>
+                      <% } %>
 
-      <div class="modal-footer border-0">
-        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                        <script>
+                          function showToast(msg) {
+                            var t = document.getElementById('saveToast');
+                            document.getElementById('saveToastMsg').innerText = msg;
+                            t.style.display = 'block';
+                            setTimeout(function () { t.style.display = 'none'; }, 2000);
+                          }
 
-        <form id="sharedDeleteCommentForm" method="POST" class="m-0">
-          <button type="submit" class="btn btn-danger rounded-pill px-4">Delete</button>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
+                          function toggleReplyForm(id) {
+                            var el = document.getElementById(id);
+                            if (!el) return;
+                            el.style.display = el.style.display === 'none' ? 'block' : 'none';
+                            if (el.style.display === 'block') {
+                              var input = el.querySelector('input[name="text"]');
+                              if (input) input.focus();
+                            }
+                          }
 
-<script>
-function countWords(text) {
-  return text.trim().split(/\s+/).filter(Boolean).length;
-}
+                          function toggleReplies(id, btn) {
+                            var el = document.getElementById(id);
+                            if (!el) return;
+                            var icon = btn.querySelector('i');
+                            if (el.style.display === 'none') {
+                              el.style.display = 'block';
+                              if (icon) { icon.classList.remove('bi-chevron-down'); icon.classList.add('bi-chevron-up'); }
+                            } else {
+                              el.style.display = 'none';
+                              if (icon) { icon.classList.remove('bi-chevron-up'); icon.classList.add('bi-chevron-down'); }
+                            }
+                          }
 
-function validateCommentTextarea(textarea) {
-  const words = countWords(textarea.value);
+                          function countWords(str) {
+                            if (!str.trim()) return 0;
+                            return str.trim().split(' ').filter(function (w) { return w !== ''; }).length;
+                          }
 
-  if (words > 100) {
-    textarea.classList.add("is-invalid");
-    return false;
-  } else {
-    textarea.classList.remove("is-invalid");
-    return true;
-  }
-}
+                          function validateTextarea(el) {
+                            if (countWords(el.value) > 100) { el.classList.add('is-invalid'); return false; }
+                            el.classList.remove('is-invalid'); return true;
+                          }
 
-// Create comment validation
-const createCommentForm = document.getElementById("createCommentForm");
-const newCommentText = document.getElementById("newCommentText");
+                          var createForm = document.getElementById('createCommentForm');
+                          var newText = document.getElementById('newCommentText');
+                          if (newText) {
+                            newText.addEventListener('input', function () { validateTextarea(newText); });
+                            createForm.addEventListener('submit', function (e) { if (!validateTextarea(newText)) e.preventDefault(); });
+                          }
 
-if (newCommentText && createCommentForm) {
-  newCommentText.addEventListener("input", function () {
-    validateCommentTextarea(newCommentText);
-  });
+                          var editForm = document.getElementById('sharedEditCommentForm');
+                          var editTextarea = document.getElementById('sharedEditCommentTextarea');
+                          var deleteForm = document.getElementById('sharedDeleteCommentForm');
 
-  createCommentForm.addEventListener("submit", function (e) {
-    if (!validateCommentTextarea(newCommentText)) {
-      e.preventDefault();
-    }
-  });
-}
+                          document.querySelectorAll('[data-bs-target="#editCommentModal"]').forEach(function (btn) {
+                            btn.addEventListener('click', function () {
+                              editForm.action = '/comments/' + btn.getAttribute('data-comment-id') + '/edit';
+                              editTextarea.value = decodeURIComponent(btn.getAttribute('data-comment-text') || '');
+                              editTextarea.classList.remove('is-invalid');
+                            });
+                          });
 
-// Shared edit comment modal logic
-const sharedEditCommentForm = document.getElementById("sharedEditCommentForm");
-const sharedEditCommentTextarea = document.getElementById("sharedEditCommentTextarea");
-const sharedDeleteCommentForm = document.getElementById("sharedDeleteCommentForm");
+                          document.querySelectorAll('[data-bs-target="#deleteCommentModal"]').forEach(function (btn) {
+                            btn.addEventListener('click', function () {
+                              deleteForm.action = '/comments/' + btn.getAttribute('data-comment-id') + '/delete';
+                            });
+                          });
 
-document.querySelectorAll('[data-bs-target="#editCommentModal"]').forEach(button => {
-  button.addEventListener("click", () => {
-    const commentId = button.getAttribute("data-comment-id");
-    const commentText = button.getAttribute("data-comment-text");
+                          if (editTextarea) {
+                            editTextarea.addEventListener('input', function () { validateTextarea(editTextarea); });
+                            editForm.addEventListener('submit', function (e) { if (!validateTextarea(editTextarea)) e.preventDefault(); });
+                          }
 
-    sharedEditCommentForm.action = `/comments/${commentId}/edit`;
-    sharedEditCommentTextarea.value = commentText || "";
-    sharedEditCommentTextarea.classList.remove("is-invalid");
-  });
-});
+                          document.querySelectorAll('.like-btn').forEach(function (btn) {
+                            btn.addEventListener('click', function () {
+                              var postId = btn.dataset.id;
+                              var icon = btn.querySelector('i');
+                              fetch('/posts/' + postId + '/like', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+                                .then(function (r) { return r.json(); })
+                                .then(function (data) {
+                                  if (data.success) {
+                                    btn.querySelector('.like-count').innerText = data.likeCount;
+                                    if (data.liked) { icon.className = 'bi bi-heart-fill'; icon.style.color = '#dc3545'; }
+                                    else { icon.className = 'bi bi-heart'; icon.style.color = ''; }
+                                  }
+                                })
+                                .catch(function (e) { console.error(e); });
+                            });
+                          });
 
-document.querySelectorAll('[data-bs-target="#deleteCommentModal"]').forEach(button => {
-  button.addEventListener("click", () => {
-    const commentId = button.getAttribute("data-comment-id");
-    sharedDeleteCommentForm.action = `/comments/${commentId}/delete`;
-  });
-});
+                          document.querySelectorAll('.save-btn').forEach(function (btn) {
+                            btn.addEventListener('click', function () {
+                              var postId = btn.dataset.id;
+                              var icon = btn.querySelector('i');
+                              fetch('/posts/' + postId + '/save', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+                                .then(function (r) { return r.json(); })
+                                .then(function (data) {
+                                  if (data.success) {
+                                    if (data.saved) {
+                                      icon.className = 'bi bi-bookmark-fill'; icon.style.color = '#f59e0b';
+                                      showToast('Saved');
+                                    } else {
+                                      icon.className = 'bi bi-bookmark'; icon.style.color = '';
+                                      showToast('Unsaved');
+                                    }
+                                  }
+                                })
+                                .catch(function (e) { console.error(e); });
+                            });
+                          });
 
-if (sharedEditCommentTextarea && sharedEditCommentForm) {
-  sharedEditCommentTextarea.addEventListener("input", function () {
-    validateCommentTextarea(sharedEditCommentTextarea);
-  });
+                          // ── Share feature ──────────────────────────────────────
+                          (function () {
+                            var postId = '<%= post._id %>';
+                            var postTitle = '<%= post.title %>';
+                            var postUrl = window.location.origin + '/posts/' + postId;
 
-  sharedEditCommentForm.addEventListener("submit", function (e) {
-    if (!validateCommentTextarea(sharedEditCommentTextarea)) {
-      e.preventDefault();
-    }
-  });
-}
+                            // Update WhatsApp href with real origin (replaces the server-rendered localhost)
+                            var waBtn = document.getElementById('whatsappShareBtn');
+                            if (waBtn) {
+                              waBtn.href = 'https://wa.me/?text=' + encodeURIComponent(postTitle + ' — ' + postUrl);
+                            }
 
-// Like button
-document.querySelectorAll(".like-btn").forEach(button => {
-  button.addEventListener("click", async () => {
-    const postId = button.dataset.id;
+                            // Update message preview with real origin
+                            var msgPreview = document.getElementById('msgPreview');
+                            if (msgPreview) {
+                              msgPreview.value = 'Shared a post: ' + postTitle + ' — ' + postUrl;
+                            }
 
-    try {
-      const res = await fetch(`/posts/${postId}/like`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        }
-      });
+                            // Copy link
+                            var copyBtn = document.getElementById('copyLinkBtn');
+                            var copyMsg = document.getElementById('copyLinkMsg');
+                            if (copyBtn) {
+                              copyBtn.addEventListener('click', function () {
+                                if (navigator.clipboard) {
+                                  navigator.clipboard.writeText(postUrl).then(function () {
+                                    copyMsg.style.display = 'inline';
+                                    setTimeout(function () { copyMsg.style.display = 'none'; }, 2000);
+                                  });
+                                } else {
+                                  // Fallback for older browsers
+                                  var ta = document.createElement('textarea');
+                                  ta.value = postUrl;
+                                  document.body.appendChild(ta);
+                                  ta.select();
+                                  document.execCommand('copy');
+                                  document.body.removeChild(ta);
+                                  copyMsg.style.display = 'inline';
+                                  setTimeout(function () { copyMsg.style.display = 'none'; }, 2000);
+                                }
+                              });
+                            }
 
-      const data = await res.json();
+                            // Open send-in-message modal from share modal
+                            var openSendBtn = document.getElementById('openSendMsgBtn');
+                            if (openSendBtn) {
+                              openSendBtn.addEventListener('click', function () {
+                                // Close share modal, open message modal
+                                var shareModalEl = document.getElementById('shareModal');
+                                var sendModalEl = document.getElementById('sendMsgModal');
+                                bootstrap.Modal.getInstance(shareModalEl).hide();
+                                setTimeout(function () {
+                                  new bootstrap.Modal(sendModalEl).show();
+                                }, 300);
+                              });
+                            }
 
-      if (data.success) {
-        const countSpan = button.querySelector(".like-count");
-        countSpan.innerText = data.likeCount;
+                            // Load recipients when send modal opens
+                            var sendModalEl = document.getElementById('sendMsgModal');
+                            var recipientSelect = document.getElementById('msgRecipientSelect');
+                            var recipientsLoaded = false;
+                            if (sendModalEl) {
+                              sendModalEl.addEventListener('show.bs.modal', function () {
+                                if (recipientsLoaded) return;
+                                fetch('/share/recipients')
+                                  .then(function (r) { return r.json(); })
+                                  .then(function (list) {
+                                    recipientSelect.innerHTML = '<option value="">— Choose a recipient —</option>';
+                                    list.forEach(function (u) {
+                                      var opt = document.createElement('option');
+                                      opt.value = u._id;
+                                      opt.textContent = u.name + ' (' + u.role + ')';
+                                      recipientSelect.appendChild(opt);
+                                    });
+                                    recipientsLoaded = true;
+                                  })
+                                  .catch(function () {
+                                    recipientSelect.innerHTML = '<option value="">Could not load recipients</option>';
+                                  });
+                              });
+                            }
 
-        if (data.liked) {
-          button.classList.remove("btn-light");
-          button.classList.add("btn-danger");
-        } else {
-          button.classList.remove("btn-danger");
-          button.classList.add("btn-light");
-        }
-      }
-    } catch (err) {
-      console.error("Like error:", err);
-    }
-  });
-});
+                            // Send message
+                            var sendConfirmBtn = document.getElementById('sendMsgConfirmBtn');
+                            var sendMsgError = document.getElementById('sendMsgError');
+                            if (sendConfirmBtn) {
+                              sendConfirmBtn.addEventListener('click', function () {
+                                var recipientId = recipientSelect.value;
+                                if (!recipientId) {
+                                  sendMsgError.textContent = 'Please select a recipient.';
+                                  sendMsgError.style.display = 'block';
+                                  return;
+                                }
+                                sendMsgError.style.display = 'none';
+                                sendConfirmBtn.disabled = true;
+                                sendConfirmBtn.textContent = 'Sending…';
 
-// Save button
-document.querySelectorAll(".save-btn").forEach(button => {
-  button.addEventListener("click", async () => {
-    const postId = button.dataset.id;
+                                var form = document.createElement('form');
+                                form.method = 'POST';
+                                form.action = '/messages/' + recipientId;
+                                var input = document.createElement('input');
+                                input.type = 'hidden';
+                                input.name = 'text';
+                                input.value = msgPreview.value;
+                                form.appendChild(input);
+                                document.body.appendChild(form);
+                                form.submit();
+                              });
+                            }
+                          })();
+                        </script>
+                        <script>
+                          // Carousel arrow visibility — no wrap, hide arrows at boundaries
+                          document.querySelectorAll('.carousel[data-bs-wrap="false"]').forEach(function (el) {
+                            var items = el.querySelectorAll('.carousel-item');
+                            var total = items.length;
+                            var prevBtn = el.querySelector('.carousel-control-prev');
+                            var nextBtn = el.querySelector('.carousel-control-next');
 
-    try {
-      const res = await fetch(`/posts/${postId}/save`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        }
-      });
+                            function updateArrows() {
+                              var activeIdx = Array.from(items).findIndex(function (item) {
+                                return item.classList.contains('active');
+                              });
+                              if (prevBtn) prevBtn.classList.toggle('d-none', activeIdx === 0);
+                              if (nextBtn) nextBtn.classList.toggle('d-none', activeIdx === total - 1);
+                            }
 
-      const data = await res.json();
+                            updateArrows();
+                            el.addEventListener('slid.bs.carousel', updateArrows);
+                          });
+                        </script>
 
-      if (data.success) {
-        if (data.saved) {
-          button.classList.remove("btn-light");
-          button.classList.add("btn-warning");
-        } else {
-          button.classList.remove("btn-warning");
-          button.classList.add("btn-light");
-        }
-      }
-    } catch (err) {
-      console.error("Save error:", err);
-    }
-  });
-});
-</script>
+                        <% if (post.type==='alert' && post.latitude && post.longitude) { %>
+                          <script>
+                            (function () {
+                              var script = document.createElement('script');
+                              script.src = 'https://maps.googleapis.com/maps/api/js?key=<%= googleMapsApiKey %>&callback=initAlertDetailMap&loading=async';
+                              script.async = true;
+                              document.head.appendChild(script);
+
+                              window.initAlertDetailMap = function () {
+                                var mapDiv = document.getElementById('alertDetailMap');
+                                if (!mapDiv) return;
+                                var pos = { lat: <%= post.latitude %>, lng: <%= post.longitude %> };
+                                var map = new google.maps.Map(mapDiv, {
+                                  center: pos,
+                                  zoom: 15,
+                                  disableDefaultUI: true,
+                                  zoomControl: true,
+                                });
+                                new google.maps.Marker({ position: pos, map: map });
+                              };
+                            })();
+                          </script>
+                          <% } %>
+
+                            <script>
+                              (function () {
+                                var noteInput = document.getElementById('reportNoteInput');
+                                var noteCount = document.getElementById('reportNoteCount');
+                                var noteError = document.getElementById('reportNoteError');
+                                var submitBtn = document.getElementById('reportSubmitBtn');
+
+                                if (!noteInput) return;
+
+                                var lastValidValue = '';
+
+                                function countWords(str) {
+                                  return str.trim() === '' ? 0 : str.trim().split(/\s+/).filter(Boolean).length;
+                                }
+
+                                noteInput.addEventListener('input', function () {
+                                  var words = countWords(this.value);
+
+                                  if (words > 10) {
+                                    // Hard block: restore last valid value
+                                    this.value = lastValidValue;
+                                    words = countWords(lastValidValue);
+                                  } else {
+                                    lastValidValue = this.value;
+                                  }
+
+                                  noteCount.textContent = words + ' / 10 words';
+                                  noteCount.style.color = words === 10 ? '#f59e0b' : '#6c757d';
+                                  noteError.style.display = 'none';
+                                  noteInput.classList.remove('is-invalid');
+                                  submitBtn.disabled = false;
+                                });
+
+                                // Reset state when modal is closed
+                                var reportModal = document.getElementById('reportModal');
+                                if (reportModal) {
+                                  reportModal.addEventListener('hidden.bs.modal', function () {
+                                    noteInput.value = '';
+                                    lastValidValue = '';
+                                    noteCount.textContent = '0 / 10 words';
+                                    noteCount.style.color = '#6c757d';
+                                    noteError.style.display = 'none';
+                                    noteInput.classList.remove('is-invalid');
+                                    submitBtn.disabled = false;
+                                  });
+                                }
+                              })();
+                            </script>

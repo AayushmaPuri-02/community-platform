@@ -1,0 +1,711 @@
+<style>
+    /* Override app-content-inner width for this page only */
+    .app-content-inner {
+        max-width: 100% !important;
+    }
+
+    .alerts-page-wrap {
+        display: flex;
+        gap: 0;
+        height: calc(100vh - 130px);
+        min-height: 520px;
+    }
+
+    /* Left panel */
+    .alerts-left {
+        width: 380px;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid #e2e8f0;
+        background: #fff;
+        overflow: hidden;
+    }
+
+    .alerts-left-header {
+        padding: 14px 14px 10px;
+        border-bottom: 1px solid #f1f5f9;
+        flex-shrink: 0;
+    }
+
+    .alerts-left-header h5 {
+        font-size: 14.5px;
+        font-weight: 700;
+        color: #1e293b;
+        margin: 0 0 8px;
+    }
+
+    .filter-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+
+    .filter-chip {
+        padding: 3px 11px;
+        border-radius: 999px;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        font-size: 11.5px;
+        font-weight: 500;
+        color: #475569;
+        cursor: pointer;
+        transition: background 0.12s, border-color 0.12s, color 0.12s;
+        user-select: none;
+    }
+
+    .filter-chip:hover {
+        background: #f1f5f9;
+        border-color: #cbd5e1;
+    }
+
+    .filter-chip.active {
+        background: #1e293b;
+        border-color: #1e293b;
+        color: #fff;
+    }
+
+    /* Status bar */
+    .alerts-status-bar {
+        padding: 7px 14px;
+        font-size: 11.5px;
+        color: #64748b;
+        border-bottom: 1px solid #f1f5f9;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .alerts-status-bar .loc-btns {
+        display: flex;
+        gap: 5px;
+        flex-shrink: 0;
+    }
+
+    /* Alert list */
+    #alertsList {
+        flex: 1;
+        overflow-y: auto;
+        padding: 6px 0;
+    }
+
+    .alert-list-item {
+        padding: 11px 14px;
+        border-bottom: 1px solid #f8fafc;
+        cursor: pointer;
+        transition: background 0.1s;
+    }
+
+    .alert-list-item:hover {
+        background: #f8fafc;
+    }
+
+    .alert-list-item .ali-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 2px;
+    }
+
+    .alert-list-item .ali-meta {
+        font-size: 11px;
+        color: #94a3b8;
+    }
+
+    .alert-list-item .ali-category {
+        display: inline-block;
+        font-size: 10px;
+        font-weight: 600;
+        padding: 2px 7px;
+        border-radius: 999px;
+        margin-bottom: 3px;
+    }
+
+    .cat-Safety {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .cat-Outage {
+        background: #fef9c3;
+        color: #854d0e;
+    }
+
+    .cat-Weather {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .cat-Fire {
+        background: #ffedd5;
+        color: #9a3412;
+    }
+
+    .cat-Traffic {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .cat-default {
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    /* Right map area */
+    .alerts-right {
+        flex: 1;
+        position: relative;
+        background: #e8eaed;
+        min-width: 0;
+    }
+
+    #alertsMap {
+        width: 100%;
+        height: 100%;
+    }
+
+    .map-overlay-msg {
+        position: absolute;
+        top: 14px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(255, 255, 255, 0.95);
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 7px 16px;
+        font-size: 12.5px;
+        color: #475569;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        pointer-events: none;
+        white-space: nowrap;
+    }
+
+    @media (max-width: 768px) {
+        .alerts-page-wrap {
+            flex-direction: column;
+            height: auto;
+        }
+
+        .alerts-left {
+            width: 100%;
+            height: 340px;
+            border-right: none;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .alerts-right {
+            height: 420px;
+        }
+    }
+</style>
+
+<div class="alerts-page-wrap">
+
+    <!-- LEFT PANEL -->
+    <div class="alerts-left">
+
+        <div class="alerts-left-header">
+            <h5><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Alerts</h5>
+            <div class="filter-chips" id="categoryFilters">
+                <span class="filter-chip active" data-category="All">All</span>
+                <span class="filter-chip" data-category="Safety">Safety</span>
+                <span class="filter-chip" data-category="Outage">Outage</span>
+                <span class="filter-chip" data-category="Weather">Weather</span>
+                <span class="filter-chip" data-category="Fire">Fire</span>
+                <span class="filter-chip" data-category="Traffic">Traffic</span>
+            </div>
+        </div>
+
+        <!-- Status bar with location buttons -->
+        <div class="alerts-status-bar">
+            <span id="alertsStatus">
+                <i class="bi bi-arrow-clockwise me-1"></i>Loading alerts&hellip;
+            </span>
+            <div class="loc-btns">
+                <button id="useCurrentLocationBtn" class="btn btn-sm btn-outline-primary"
+                    style="font-size:11px; padding:2px 9px;">
+                    <i class="bi bi-geo-alt me-1"></i>Use current location
+                </button>
+                <button id="expandSearchBtn" class="btn btn-sm btn-outline-info"
+                    style="font-size:11px; padding:2px 9px; display:none;">
+                    <i class="bi bi-arrows-fullscreen me-1"></i>Expand search area
+                </button>
+                <button id="resetRadiusBtn" class="btn btn-sm btn-outline-success"
+                    style="font-size:11px; padding:2px 9px; display:none;">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>Reset radius
+                </button>
+                <button id="showAllAlertsBtn" class="btn btn-sm btn-outline-secondary"
+                    style="font-size:11px; padding:2px 9px; display:none;">
+                    Show all
+                </button>
+            </div>
+        </div>
+
+        <div id="alertsList">
+            <div class="px-4 py-5 text-center text-muted" style="font-size:13px;">
+                <i class="bi bi-bell-slash mb-2 d-block" style="font-size:1.6rem;"></i>
+                Loading&hellip;
+            </div>
+        </div>
+
+    </div><!-- /alerts-left -->
+
+    <!-- RIGHT MAP AREA -->
+    <div class="alerts-right">
+        <div id="alertsMap"></div>
+        <div class="map-overlay-msg" id="mapOverlayMsg">
+            <i class="bi bi-map me-1"></i>Map loading&hellip;
+        </div>
+    </div>
+
+</div><!-- /alerts-page-wrap -->
+
+<script>
+    // ── Helpers ─────────────────────────────────────────────────────────────────
+
+    function radiusToKm(r) {
+        if (r === '500m') return 0.5;
+        if (r === '1km') return 1;
+        if (r === '2km') return 2;
+        if (r === '5km') return 5;
+        return 1;
+    }
+
+    function getDistanceKm(lat1, lng1, lat2, lng2) {
+        var R = 6371;
+        var dLat = (lat2 - lat1) * Math.PI / 180;
+        var dLng = (lng2 - lng1) * Math.PI / 180;
+        var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function categoryClass(cat) {
+        var m = { Safety: 'cat-Safety', Outage: 'cat-Outage', Weather: 'cat-Weather', Fire: 'cat-Fire', Traffic: 'cat-Traffic' };
+        return m[cat] || 'cat-default';
+    }
+
+    function timeAgo(dateStr) {
+        var diff = Date.now() - new Date(dateStr).getTime();
+        var mins = Math.floor(diff / 60000);
+        var hours = Math.floor(diff / 3600000);
+        if (mins < 1) return 'just now';
+        if (mins < 60) return mins + ' min ago';
+        if (hours < 24) return hours + ' hr' + (hours === 1 ? '' : 's') + ' ago';
+        return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    // ── Render list ──────────────────────────────────────────────────────────────
+
+    function renderAlerts(alerts, usingLocation) {
+        var list = document.getElementById('alertsList');
+
+        if (!alerts || alerts.length === 0) {
+            var msg = usingLocation ? 'No alerts in your current area.' : 'No alerts have been posted yet.';
+            list.innerHTML = '<div class="px-4 py-5 text-center text-muted" style="font-size:13px;"><i class="bi bi-bell-slash mb-2 d-block" style="font-size:1.5rem;"></i>' + msg + '</div>';
+            setStatus('<i class="bi bi-info-circle me-1"></i>' + msg);
+            return;
+        }
+
+        var html = '';
+        alerts.forEach(function (a) {
+            var catLabel = a.alertCategory || 'Alert';
+            var catCls = categoryClass(a.alertCategory);
+            var status = a.alertStatus === 'Resolved' ? 'Resolved' : 'Active';
+            var statusBadge = status === 'Resolved'
+                ? '<span class="badge bg-info text-dark" style="font-size:10px;">Resolved</span>'
+                : '<span class="badge bg-success" style="font-size:10px;">Active</span>';
+            var desc = (a.description || '').length > 90 ? a.description.slice(0, 90).trimEnd() + '\u2026' : (a.description || '');
+            var loc = a.locationName || '';
+            var radius = a.alertRadius ? (' \u00b7 ' + a.alertRadius) : '';
+            var author = a.authorName ? ('By ' + a.authorName) : '';
+            var time = timeAgo(a.createdAt);
+            var distStr = (typeof a.distanceKm === 'number')
+                ? '<span class="ms-2" style="color:#3b82f6;font-weight:600;">' + a.distanceKm.toFixed(1) + ' km away</span>'
+                : '';
+
+            html += '<a href="/posts/' + a._id + '" class="text-decoration-none">';
+            html += '<div class="alert-list-item" style="' + (status === 'Resolved' ? 'opacity:0.75;' : '') + '">';
+            html += '<div class="d-flex align-items-center gap-2 mb-1">';
+            html += '<span class="ali-category ' + catCls + '">' + catLabel + '</span>';
+            html += statusBadge;
+            html += distStr;
+            html += '</div>';
+            html += '<div class="ali-title">' + a.title + '</div>';
+            if (loc) html += '<div class="ali-meta"><i class="bi bi-geo-alt me-1"></i>' + loc + radius + '</div>';
+            if (desc) html += '<div class="ali-meta mt-1" style="color:#64748b;">' + desc + '</div>';
+            html += '<div class="ali-meta mt-1">' + time + (author ? ' \u00b7 ' + author : '') + '</div>';
+            html += '</div></a>';
+        });
+
+        list.innerHTML = html;
+        setStatus(
+            '<i class="bi bi-check-circle me-1 text-success"></i>' +
+            alerts.length + ' alert' + (alerts.length === 1 ? '' : 's') +
+            (usingLocation ? ' near you' : ' loaded')
+        );
+    }
+
+    function setStatus(html) {
+        document.getElementById('alertsStatus').innerHTML = html;
+    }
+
+    // ── State ────────────────────────────────────────────────────────────────────
+
+    var allAlerts = [];
+    var userLocation = null;
+    var selectedCategory = 'All';
+    var searchRadiusKm = null;   // null = use each alert's own radius; number = expanded km
+
+    var homeLocation = (function () {
+        var lat = <%= homeLatitude || 'null' %>;
+        var lng = <%= homeLongitude || 'null' %>;
+        return (lat && lng) ? { lat: lat, lng: lng } : null;
+    })();
+
+    // ── applyFilters — single source of truth for list + markers ─────────────────
+
+    function applyFilters() {
+        // Pre-filter:
+        // - Active alerts: always visible
+        // - Resolved alerts: visible for 3 days after resolvedAt
+        //   If resolvedAt is missing, show it anyway (just resolved, timestamp not yet propagated)
+        var threeDaysMs = 3 * 24 * 60 * 60 * 1000;
+        var visibleAlerts = allAlerts.filter(function (a) {
+            if (a.alertStatus === 'Resolved') {
+                if (!a.resolvedAt) return true; // no timestamp yet — keep visible
+                return (Date.now() - new Date(a.resolvedAt).getTime()) < threeDaysMs;
+            }
+            return true; // Active alerts always visible
+        });
+
+        var base = [];
+        var usingLocation = false;
+
+        if (userLocation) {
+            visibleAlerts.forEach(function (a) {
+                if (!a.latitude || !a.longitude) return;
+                var dist = getDistanceKm(userLocation.lat, userLocation.lng, a.latitude, a.longitude);
+                // Use expanded radius if set, otherwise each alert's own radius
+                var threshold = (searchRadiusKm !== null) ? searchRadiusKm : radiusToKm(a.alertRadius);
+                if (dist <= threshold) {
+                    a.distanceKm = dist;
+                    base.push(a);
+                }
+            });
+            base.sort(function (x, y) { return x.distanceKm - y.distanceKm; });
+            usingLocation = true;
+        } else {
+            base = visibleAlerts.slice();
+        }
+
+        // Category filter
+        var filtered = (selectedCategory === 'All')
+            ? base
+            : base.filter(function (a) { return a.alertCategory === selectedCategory; });
+
+        // Empty state
+        if (!filtered || filtered.length === 0) {
+            var catPart = selectedCategory !== 'All' ? (selectedCategory + ' ') : '';
+            var msg;
+            if (usingLocation && searchRadiusKm !== null) {
+                msg = 'No ' + catPart + 'alerts within ' + searchRadiusKm + ' km for this category.';
+            } else if (usingLocation) {
+                msg = 'No ' + catPart + 'alerts in your current area.';
+            } else {
+                msg = 'No ' + catPart + 'alerts have been posted yet.';
+            }
+            document.getElementById('alertsList').innerHTML =
+                '<div class="px-4 py-5 text-center text-muted" style="font-size:13px;">' +
+                '<i class="bi bi-bell-slash mb-2 d-block" style="font-size:1.5rem;"></i>' + msg + '</div>';
+            setStatus('<i class="bi bi-info-circle me-1"></i>' + msg);
+        } else {
+            renderAlerts(filtered, usingLocation);
+        }
+
+        // Update status when showing all (no location)
+        if (!usingLocation && filtered && filtered.length > 0) {
+            setStatus('<i class="bi bi-list me-1"></i>Showing all alerts. Use current location to see nearby alerts.');
+        }
+
+        // Map markers
+        if (typeof window.updateMapMarkers === 'function') {
+            window.updateMapMarkers(userLocation || null, filtered);
+        } else {
+            window._pendingMapUpdate = function () { window.updateMapMarkers(userLocation || null, filtered); };
+        }
+    }
+
+    // ── Show all (no location filter) ────────────────────────────────────────────
+
+    function showAll() {
+        userLocation = null;
+        searchRadiusKm = null;
+        allAlerts.forEach(function (a) { delete a.distanceKm; });
+        document.getElementById('showAllAlertsBtn').style.display = 'none';
+        document.getElementById('expandSearchBtn').style.display = 'none';
+        document.getElementById('resetRadiusBtn').style.display = 'none';
+        applyFilters();
+    }
+
+    // ── Apply location filter ─────────────────────────────────────────────────────
+
+    function applyLocationFilter() {
+        if (!userLocation) {
+            document.getElementById('showAllAlertsBtn').style.display = 'none';
+            document.getElementById('expandSearchBtn').style.display = 'none';
+            document.getElementById('resetRadiusBtn').style.display = 'none';
+            setStatus('<i class="bi bi-exclamation-circle me-1 text-warning"></i>Location unavailable. Showing all alerts.');
+        } else {
+            document.getElementById('showAllAlertsBtn').style.display = '';
+            document.getElementById('expandSearchBtn').style.display = '';
+            document.getElementById('resetRadiusBtn').style.display = (searchRadiusKm !== null) ? '' : 'none';
+            if (searchRadiusKm !== null) {
+                setStatus('<i class="bi bi-geo-alt-fill me-1 text-success"></i>Showing alerts within ' + searchRadiusKm + ' km of your current location');
+            } else {
+                setStatus('<i class="bi bi-geo-alt-fill me-1 text-success"></i>Showing alerts near your current location');
+            }
+        }
+        applyFilters();
+    }
+
+    document.getElementById('expandSearchBtn').addEventListener('click', function () {
+        if (!userLocation) return;
+        var steps = [2, 5, 10];
+        if (searchRadiusKm === null) {
+            searchRadiusKm = steps[0];
+        } else {
+            var next = steps.find(function (s) { return s > searchRadiusKm; });
+            searchRadiusKm = next !== undefined ? next : 10;
+        }
+        document.getElementById('resetRadiusBtn').style.display = '';
+        setStatus('<i class="bi bi-geo-alt-fill me-1 text-success"></i>Showing alerts within ' + searchRadiusKm + ' km of your current location');
+        applyFilters();
+    });
+
+    // ── "Reset radius" button ─────────────────────────────────────────────────────
+
+    document.getElementById('resetRadiusBtn').addEventListener('click', function () {
+        searchRadiusKm = null;
+        document.getElementById('resetRadiusBtn').style.display = 'none';
+        setStatus('<i class="bi bi-geo-alt-fill me-1 text-success"></i>Showing alerts near your current location');
+        applyFilters();
+    });
+
+    // ── Fetch on load — show all, no auto geolocation ────────────────────────────
+
+    fetch('/api/alerts')
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            allAlerts = data;
+            applyFilters();
+        })
+        .catch(function () {
+            document.getElementById('alertsList').innerHTML =
+                '<div class="px-4 py-4 text-center text-danger" style="font-size:13px;"><i class="bi bi-exclamation-circle me-1"></i>Could not load alerts.</div>';
+            setStatus('<i class="bi bi-x-circle me-1 text-danger"></i>Failed to load');
+        });
+
+    // ── "Use current location" button ─────────────────────────────────────────────
+
+    document.getElementById('useCurrentLocationBtn').addEventListener('click', function () {
+        if (!navigator.geolocation) {
+            setStatus('<i class="bi bi-exclamation-circle me-1 text-warning"></i>Geolocation not supported by this browser.');
+            return;
+        }
+        console.log('Requesting current location');
+        setStatus('<i class="bi bi-geo-alt me-1"></i>Finding your location\u2026');
+        navigator.geolocation.getCurrentPosition(
+            function (pos) {
+                console.log('Geolocation success', pos.coords);
+                userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                applyLocationFilter();
+            },
+            function (err) {
+                console.log('Geolocation error', err.code, err.message);
+                userLocation = null;
+                var finalStatus;
+                if (homeLocation) {
+                    userLocation = homeLocation;
+                    document.getElementById('showAllAlertsBtn').style.display = '';
+                    document.getElementById('expandSearchBtn').style.display = '';
+                    document.getElementById('resetRadiusBtn').style.display = 'none';
+                    if (err.code === 1) {
+                        finalStatus = '<i class="bi bi-house-fill me-1 text-info"></i>Location permission denied. Using your home location instead.';
+                    } else {
+                        finalStatus = '<i class="bi bi-house-fill me-1 text-info"></i>Unable to fetch location. Using your home location instead.';
+                    }
+                } else {
+                    if (err.code === 1) {
+                        finalStatus = '<i class="bi bi-exclamation-circle me-1 text-warning"></i>Location permission denied. No home location is saved. Showing all alerts.';
+                    } else {
+                        finalStatus = '<i class="bi bi-exclamation-circle me-1 text-warning"></i>Unable to fetch location. Please try again or use Show all.';
+                    }
+                }
+                // call applyFilters first, then overwrite status so it isn't clobbered
+                applyFilters();
+                setStatus(finalStatus);
+            },
+            { timeout: 15000, maximumAge: 60000, enableHighAccuracy: true }
+        );
+    });
+
+    // ── "Show all" button ─────────────────────────────────────────────────────────
+
+    document.getElementById('showAllAlertsBtn').addEventListener('click', showAll);
+
+    // ── Category chip clicks ──────────────────────────────────────────────────────
+
+    document.querySelectorAll('.filter-chip').forEach(function (chip) {
+        chip.addEventListener('click', function () {
+            document.querySelectorAll('.filter-chip').forEach(function (c) { c.classList.remove('active'); });
+            chip.classList.add('active');
+            selectedCategory = chip.getAttribute('data-category');
+            applyFilters();
+        });
+    });
+</script>
+
+<!-- Google Maps -->
+<script>
+    (function () {
+        var script = document.createElement('script');
+        script.src = 'https://maps.googleapis.com/maps/api/js?key=<%= googleMapsApiKey %>&callback=initAlertsPageMap&loading=async';
+        script.async = true;
+        script.defer = true;
+        document.head.appendChild(script);
+    })();
+
+    window.initAlertsPageMap = function () {
+        var mapDiv = document.getElementById('alertsMap');
+        if (!mapDiv) return;
+
+        var map = new google.maps.Map(mapDiv, {
+            center: { lat: 27.7172, lng: 85.3240 },
+            zoom: 13,
+            mapTypeControl: false,
+            streetViewControl: false,
+            fullscreenControl: false,
+            styles: [
+                { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] },
+                { featureType: "transit", stylers: [{ visibility: "off" }] }
+            ],
+        });
+
+        var overlay = document.getElementById('mapOverlayMsg');
+        if (overlay) overlay.style.display = 'none';
+
+        window._alertsMap = map;
+
+        var userMarker = null;
+        var alertMarkers = [];
+        var infoWindow = new google.maps.InfoWindow();
+
+        var typeColors = {
+            // by post type
+            alert: '#e53935', safety: '#e53935', Safety: '#e53935',
+            traffic: '#fbc02d', Traffic: '#fbc02d',
+            outage: '#1e88e5', Outage: '#1e88e5',
+            event: '#8e24aa',
+            volunteer: '#43a047',
+            notice: '#616161',
+            training: '#fb8c00', Fire: '#fb8c00',
+            community: '#00897b',
+            Weather: '#1e88e5',
+        };
+
+        window.updateMapMarkers = function (userLoc, alerts) {
+
+            // 1. User marker
+            if (userMarker) { userMarker.setMap(null); userMarker = null; }
+
+            if (userLoc) {
+                map.setCenter({ lat: userLoc.lat, lng: userLoc.lng });
+                map.setZoom(14);
+
+                // Halo
+                new google.maps.Marker({
+                    map: map,
+                    position: { lat: userLoc.lat, lng: userLoc.lng },
+                    zIndex: 10,
+                    title: 'Your current location',
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 18,
+                        fillColor: '#3b82f6', fillOpacity: 0.15,
+                        strokeColor: '#3b82f6', strokeWeight: 1, strokeOpacity: 0.4,
+                    },
+                });
+
+                // Dot
+                userMarker = new google.maps.Marker({
+                    map: map,
+                    position: { lat: userLoc.lat, lng: userLoc.lng },
+                    zIndex: 11,
+                    title: 'Your current location',
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 8,
+                        fillColor: '#3b82f6', fillOpacity: 1,
+                        strokeColor: '#ffffff', strokeWeight: 2.5,
+                    },
+                });
+            }
+
+            // 2. Clear old alert markers
+            alertMarkers.forEach(function (m) { m.setMap(null); });
+            alertMarkers = [];
+
+            // 3. Alert markers
+            (alerts || []).forEach(function (a) {
+                if (!a.latitude || !a.longitude) return;
+
+                var fillColor = typeColors[a.type] || typeColors[a.alertCategory] || '#e53935';
+                var isResolved = a.alertStatus === 'Resolved';
+                var marker = new google.maps.Marker({
+                    map: map,
+                    position: { lat: a.latitude, lng: a.longitude },
+                    title: a.title + (isResolved ? ' (Resolved)' : ''),
+                    zIndex: isResolved ? 3 : 5,
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: isResolved ? 7 : 10,
+                        fillColor: isResolved ? '#94a3b8' : fillColor,
+                        fillOpacity: isResolved ? 0.6 : 1,
+                        strokeColor: '#000000',
+                        strokeWeight: isResolved ? 1 : 2,
+                    },
+                });
+
+                var catLabel = a.alertCategory || 'Alert';
+                var distText = (typeof a.distanceKm === 'number')
+                    ? '<div style="color:#3b82f6;font-size:11.5px;margin-top:2px;">' + a.distanceKm.toFixed(1) + ' km away</div>'
+                    : '';
+                var content =
+                    '<div style="font-family:sans-serif;font-size:13px;max-width:220px;line-height:1.5;">' +
+                    '<div style="font-weight:700;color:#1e293b;margin-bottom:3px;">' + a.title + '</div>' +
+                    '<div style="font-size:11.5px;color:#64748b;">' + catLabel + '</div>' +
+                    distText +
+                    '<div style="margin-top:6px;"><a href="/posts/' + a._id + '" style="color:#04888D;font-size:12px;font-weight:600;">View post &rarr;</a></div>' +
+                    '</div>';
+
+                marker.addListener('click', function () {
+                    infoWindow.setContent(content);
+                    infoWindow.open(map, marker);
+                });
+
+                alertMarkers.push(marker);
+            });
+        };
+
+        // Run any pending update that arrived before Maps loaded
+        if (typeof window._pendingMapUpdate === 'function') {
+            window._pendingMapUpdate();
+            window._pendingMapUpdate = null;
+        }
+    };
+</script>

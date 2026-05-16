@@ -24,7 +24,7 @@ router.get("/api/alerts", async (req, res) => {
     })
       .populate("author", "fullName organizationName communityName")
       .sort({ createdAt: -1 })
-      .select("_id title description alertCategory alertRadius alertStatus locationName latitude longitude createdAt author");
+      .select("_id title description alertCategory alertRadius alertStatus locationName latitude longitude createdAt resolvedAt author");
 
     const data = alerts.map(post => ({
       _id: post._id,
@@ -37,6 +37,7 @@ router.get("/api/alerts", async (req, res) => {
       latitude: post.latitude,
       longitude: post.longitude,
       createdAt: post.createdAt,
+      resolvedAt: post.resolvedAt || null,
       authorName: post.author
         ? (post.author.communityName || post.author.organizationName || post.author.fullName || "Unknown")
         : "Unknown",
@@ -114,6 +115,7 @@ router.post("/posts", canCreatePost, (req, res, next) => {
 }, postController.createPost);
 
 router.post("/posts/:id/delete", isLoggedIn, postController.deletePost);
+router.post("/posts/:id/resolve", isLoggedIn, postController.resolveAlert);
 
 router.get("/posts/:id/edit", isLoggedIn, postController.getEditPost);
 
@@ -224,21 +226,6 @@ router.post("/posts/:id/volunteer", isLoggedIn, async (req, res) => {
       return res.redirect(`/posts/${post._id}`);
     }
 
-    // Duplicate check
-    const alreadyJoined = post.volunteers.some(
-      v => v.user && v.user.toString() === req.session.userId.toString()
-    );
-    if (alreadyJoined) {
-      req.flash("error", "You have already signed up as a volunteer");
-      return res.redirect(`/posts/${post._id}`);
-    }
-
-    // Slot limit check
-    if (post.maxVolunteers > 0 && post.volunteers.length >= post.maxVolunteers) {
-      req.flash("error", "Volunteer slots are full");
-      return res.redirect(`/posts/${post._id}`);
-    }
-
     const { fullName, phone, note } = req.body;
 
     if (!fullName || !fullName.trim()) {
@@ -249,6 +236,30 @@ router.post("/posts/:id/volunteer", isLoggedIn, async (req, res) => {
     const nepalPhoneRegex = /^(97|98)\d{8}$/;
     if (!phone || !nepalPhoneRegex.test(phone.trim())) {
       req.flash("error", "Enter a valid Nepal mobile number (starts with 97 or 98, 10 digits)");
+      return res.redirect(`/posts/${post._id}`);
+    }
+
+    // Check if this user already has an entry
+    const existingEntry = post.volunteers.find(
+      v => v.user && v.user.toString() === req.session.userId.toString()
+    );
+
+    if (existingEntry) {
+      if (existingEntry.status === "rejected") {
+        req.flash("error", "Your application was rejected. You cannot sign up again for this post.");
+        return res.redirect(`/posts/${post._id}`);
+      }
+      // Already pending or attended — block
+      req.flash("error", "You have already signed up as a volunteer");
+      return res.redirect(`/posts/${post._id}`);
+    }
+
+    // Slot limit check — only count pending and attended (not rejected)
+    const activeCount = post.volunteers.filter(
+      v => v.status === "pending" || v.status === "attended"
+    ).length;
+    if (post.maxVolunteers > 0 && activeCount >= post.maxVolunteers) {
+      req.flash("error", "Volunteer slots are full");
       return res.redirect(`/posts/${post._id}`);
     }
 

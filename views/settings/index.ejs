@@ -1,0 +1,218 @@
+<div class="container py-4" style="max-width: 680px;">
+
+    <h2 class="fw-bold mb-1">Settings</h2>
+    <p class="text-muted mb-4 small">Manage your account and notification preferences.</p>
+
+    <% // Fallback defaults for older users who don't have notificationPreferences yet var
+        notifPrefs=user.notificationPreferences || { emailEnabled: true, messageEmails: true, alertEmails: true,
+        postEmails: false }; %>
+
+        <% if (role==="organization" || role==="communityAdmin" ) { %>
+
+            <!-- ACCOUNT INFORMATION -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-4">Account Information</h5>
+
+                    <form action="/settings/account" method="POST">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                Full Name
+                                <% if (role==="communityAdmin" ) { %>
+                                    <span class="text-muted fw-normal small">(handler's name — not shown
+                                        publicly)</span>
+                                    <% } else { %>
+                                        <span class="text-muted fw-normal small">(account handler name)</span>
+                                        <% } %>
+                            </label>
+                            <input type="text" name="fullName" class="form-control" value="<%= user.fullName || '' %>"
+                                placeholder="Enter full name" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Email Address</label>
+                            <input type="email" name="email" class="form-control" value="<%= user.email || '' %>"
+                                placeholder="Enter email" required>
+                        </div>
+
+                        <% if (role==="organization" ) { %>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold text-muted">Organization Name</label>
+                                <input type="text" class="form-control bg-light"
+                                    value="<%= user.organizationName || '' %>" disabled>
+                                <div class="form-text">Organization name cannot be changed here.</div>
+                            </div>
+                            <% } %>
+
+                                <% if (role==="communityAdmin" ) { %>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold text-muted">Community Name</label>
+                                        <input type="text" class="form-control bg-light"
+                                            value="<%= user.communityName || (user.location + ' Locals') %>" disabled>
+                                        <div class="form-text">Community name is auto-generated and cannot be changed.
+                                        </div>
+                                    </div>
+                                    <% } %>
+
+                                        <button type="submit" class="btn btn-primary px-4 rounded-pill">Save
+                                            Changes</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- CHANGE PASSWORD -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-4">Change Password</h5>
+
+                    <form action="/settings/password" method="POST">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Current Password</label>
+                            <input type="password" name="currentPassword" class="form-control"
+                                placeholder="Enter current password" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">New Password</label>
+                            <input type="password" name="newPassword" id="newPassword" class="form-control"
+                                placeholder="At least 6 characters" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Confirm New Password</label>
+                            <input type="password" name="confirmNewPassword" id="confirmNewPassword"
+                                class="form-control" placeholder="Re-enter new password" required>
+                            <div class="invalid-feedback">Passwords do not match.</div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary px-4 rounded-pill">Update Password</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- VERIFICATION & IDENTITY -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-4">Verification & Identity</h5>
+
+                    <% if (user.profileImage) { %>
+                        <div class="mb-4">
+                            <p class="fw-semibold mb-2">Profile Image</p>
+                            <img src="<%= user.profileImage %>" alt="Profile Image" class="rounded-3 border"
+                                style="width:100px; height:100px; object-fit:cover;">
+                        </div>
+                        <% } %>
+
+                            <div class="mb-2">
+                                <p class="fw-semibold mb-1">Verification Document</p>
+                                <% if (user.verificationDoc) { %>
+                                    <% var docUrl=user.verificationDoc.toLowerCase(); var isPdf=docUrl.includes(".pdf")
+                                        || docUrl.includes("/raw/upload/"); %>
+                                        <% if (isPdf) { %>
+                                            <a href="<%= user.verificationDoc %>" target="_blank"
+                                                class="btn btn-sm btn-outline-secondary rounded-pill">
+                                                <i class="bi bi-file-earmark-text me-1"></i> View Document
+                                            </a>
+                                            <% } else { %>
+                                                <img src="<%= user.verificationDoc %>" alt="Verification Document"
+                                                    class="img-fluid rounded-3 border"
+                                                    style="max-width:260px; max-height:180px; object-fit:contain; display:block;">
+                                                <a href="<%= user.verificationDoc %>" target="_blank"
+                                                    class="btn btn-sm btn-outline-secondary rounded-pill mt-2">
+                                                    Open in new tab
+                                                </a>
+                                                <% } %>
+                                                    <% } else { %>
+                                                        <p class="text-muted small mb-0">No verification document on
+                                                            file.</p>
+                                                        <% } %>
+                            </div>
+                </div>
+            </div>
+
+            <% } %>
+
+                <!-- NOTIFICATION PREFERENCES — all users -->
+                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold mb-1">Notification Preferences</h5>
+                        <p class="text-muted small mb-4">Choose which email notifications you want to receive.</p>
+
+                        <form action="/settings/notifications" method="POST">
+
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="emailEnabled"
+                                        id="emailEnabled" <%=notifPrefs.emailEnabled ? 'checked' : '' %>>
+                                    <label class="form-check-label fw-semibold" for="emailEnabled">
+                                        Enable email notifications
+                                    </label>
+                                    <div class="form-text">Master switch. Turning this off disables all email
+                                        notifications.</div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="messageEmails"
+                                        id="messageEmails" <%=notifPrefs.messageEmails ? 'checked' : '' %>>
+                                    <label class="form-check-label" for="messageEmails">
+                                        Email me when I receive a new message
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="alertEmails" id="alertEmails"
+                                        <%=notifPrefs.alertEmails ? 'checked' : '' %>>
+                                    <label class="form-check-label" for="alertEmails">
+                                        Email me when an alert is posted by a page I follow
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="postEmails" id="postEmails"
+                                        <%=notifPrefs.postEmails ? 'checked' : '' %>>
+                                    <label class="form-check-label" for="postEmails">
+                                        Email me for all new posts from pages I follow
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary px-4 rounded-pill">Save Preferences</button>
+                        </form>
+                    </div>
+                </div>
+
+</div>
+
+<% if (role==="organization" || role==="communityAdmin" ) { %>
+    <script>
+        var newPwd = document.getElementById('newPassword');
+        var confirmPwd = document.getElementById('confirmNewPassword');
+
+        function checkMatch() {
+            if (confirmPwd.value && newPwd.value !== confirmPwd.value) {
+                confirmPwd.classList.add('is-invalid');
+            } else {
+                confirmPwd.classList.remove('is-invalid');
+            }
+        }
+
+        if (newPwd && confirmPwd) {
+            newPwd.addEventListener('input', checkMatch);
+            confirmPwd.addEventListener('input', checkMatch);
+
+            confirmPwd.closest('form').addEventListener('submit', function (e) {
+                if (newPwd.value !== confirmPwd.value) {
+                    e.preventDefault();
+                    confirmPwd.classList.add('is-invalid');
+                }
+            });
+        }
+    </script>
+    <% } %>

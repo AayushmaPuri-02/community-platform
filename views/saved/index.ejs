@@ -1,46 +1,119 @@
 <h2 class="mb-4">Saved Posts</h2>
 
-<% if (savedPosts.length === 0) { %>
-  <p class="text-muted">No saved posts yet.</p>
-<% } %>
-
-<% savedPosts.forEach(post => { %>
-  <div class="card mb-4 border-1 shadow-sm rounded-3">
-    <div class="card-body p-4">
-
-      <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
-        <h5 class="fw-bold mb-0">
-          <a href="/posts/<%= post._id %>" class="text-decoration-none" style="color: #04888D;">
-            <%= post.title %>
-          </a>
-        </h5>
-        <small class="text-muted fw-light">
-          <%= post.createdAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) %>
-        </small>
-      </div>
-
-      <% if (post.postImage && post.postImage.url) { %>
-        <div class="mb-3">
-          <a href="/posts/<%= post._id %>">
-            <img 
-              src="<%= post.postImage.url %>" 
-              class="w-100 rounded"
-              style="max-height: 400px; object-fit: contain;">
-          </a>
-        </div>
-      <% } %>
-
-      <p class="text-secondary mb-3" style="line-height: 1.6; font-size: 0.95rem;">
-        <%= post.description %>
-      </p>
-
-      <div class="small">
-        <span class="text-muted">Posted by</span>
-        <span class="fw-bold text-danger ms-1">
-          <%= post.author ? (post.author.organizationName || post.author.fullName) : "Unknown" %>
-        </span>
-      </div>
-
-    </div>
+<% if (savedPosts.length===0) { %>
+  <div class="card border-0 shadow-sm rounded-4 p-5 text-center">
+    <i class="bi bi-bookmark-heart text-muted mb-3" style="font-size: 2.5rem;"></i>
+    <p class="text-muted mb-0">No saved posts yet. Bookmark posts from your feed to see them here.</p>
   </div>
-<% }) %>
+  <% } %>
+
+    <% savedPosts.forEach(post=> { %>
+      <div class="card mb-4 border shadow-sm rounded-4 overflow-hidden bg-white">
+        <div class="card-body p-4">
+
+          <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+            <h5 class="fw-bold mb-0">
+              <a href="/posts/<%= post._id %>" class="text-decoration-none" style="color: #04888D;">
+                <%= post.title %>
+              </a>
+            </h5>
+            <small class="text-muted fw-light">
+              <%= post.createdAt.toLocaleDateString('en-US', { month: 'long' , day: 'numeric' , year: 'numeric' }) %>
+            </small>
+          </div>
+
+          <% if (post.images && post.images.length> 0) { %>
+            <div class="row g-2 mb-3">
+              <% post.images.forEach(img=> { %>
+                <div
+                  class="<%= post.images.length === 1 ? 'col-12' : post.images.length === 2 ? 'col-md-6' : post.images.length === 3 ? 'col-md-4' : 'col-md-3' %>">
+                  <a href="/posts/<%= post._id %>">
+                    <img src="<%= img.url %>" class="rounded-3 border w-100" style="height: 250px; object-fit: cover;"
+                      alt="Post image">
+                  </a>
+                </div>
+                <% }) %>
+            </div>
+            <% } %>
+
+              <div class="text-secondary mb-3" style="line-height:1.55; font-size:0.88rem;">
+                <%= (post.description || '' ).length> 200 ? post.description.slice(0,200).trimEnd() + '…' :
+                  post.description %>
+              </div>
+
+              <% if (post.tags && post.tags.length> 0) { %>
+                <div class="mb-3">
+                  <% post.tags.forEach(tag=> { %>
+                    <span class="badge bg-light text-primary border rounded-pill me-1" style="font-size:0.72rem;">#<%=
+                        tag %></span>
+                    <% }) %>
+                </div>
+                <% } %>
+
+                  <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                    <div class="small text-muted">
+                      <span>By</span>
+                      <span class="fw-semibold text-dark ms-1">
+                        <%= post.author ? (post.author.communityName || post.author.organizationName ||
+                          post.author.fullName) : "Unknown" %>
+                      </span>
+                    </div>
+
+                    <div class="save-btn" data-id="<%= post._id %>" style="cursor: pointer;" title="Unsave">
+                      <i class="bi bi-bookmark-fill text-warning"></i>
+                    </div>
+                  </div>
+
+        </div>
+      </div>
+      <% }) %>
+
+        <style>
+          @keyframes pop {
+            0% {
+              transform: scale(1);
+            }
+
+            50% {
+              transform: scale(1.4);
+            }
+
+            100% {
+              transform: scale(1);
+            }
+          }
+
+          .animate-pop {
+            animation: pop 0.3s ease-out;
+          }
+        </style>
+
+        <script>
+          document.querySelectorAll(".save-btn").forEach(button => {
+            button.addEventListener("click", async () => {
+              const postId = button.dataset.id;
+              const icon = button.querySelector("i");
+
+              icon.classList.add("animate-pop");
+              icon.addEventListener("animationend", () => icon.classList.remove("animate-pop"), { once: true });
+
+              try {
+                const res = await fetch(`/posts/${postId}/save`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" }
+                });
+                const data = await res.json();
+
+                if (data.success && !data.saved) {
+                  // Remove the card from the page
+                  const card = button.closest(".card");
+                  if (card) {
+                    card.style.transition = "opacity 0.3s ease";
+                    card.style.opacity = "0";
+                    setTimeout(() => card.remove(), 300);
+                  }
+                }
+              } catch (err) { console.error("Save error:", err); }
+            });
+          });
+        </script>

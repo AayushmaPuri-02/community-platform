@@ -19,10 +19,17 @@ const commentSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+
+    parentComment: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Comment",
+      default: null,
+    },
+
     isPinned: {
-  type: Boolean,
-  default: false,
-}
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

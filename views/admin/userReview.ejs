@@ -1,0 +1,279 @@
+<style>
+    .card-profile {
+        border-radius: 18px;
+        border: none;
+    }
+
+    .post-link {
+        color: #04888D;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .post-link:hover {
+        text-decoration: underline;
+    }
+
+    .badge-tag {
+        background-color: #e0f2f1;
+        color: #04888D;
+        font-weight: 500;
+    }
+
+    .hero-banner {
+        height: 220px;
+        border-radius: 18px 18px 0 0;
+        background-image: linear-gradient(rgba(223, 244, 242, 0.72), rgba(243, 253, 252, 0.72)), url("<%= user.profileImage || '/images/default-avatar.png' %>");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+
+    .profile-avatar {
+        width: 130px;
+        height: 130px;
+        object-fit: cover;
+        border: 4px solid white;
+        margin-top: -65px;
+        background: white;
+    }
+
+    .info-label {
+        font-size: 0.8rem;
+        color: #6c757d;
+        display: block;
+        margin-bottom: 4px;
+    }
+</style>
+
+<div class="container py-4">
+
+    <p>
+        <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm">← Back</a>
+    </p>
+
+    <% if (user.warningHistory && user.warningHistory.length> 0) { %>
+        <div class="card border-0 shadow-sm rounded-4 mb-4 p-4">
+            <h6 class="fw-bold mb-3 text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Warning History (<%=
+                    user.warningHistory.length %>)</h6>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" style="font-size:13px;">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Reason</th>
+                            <th>Message</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% user.warningHistory.slice().reverse().forEach(function(w) { %>
+                            <tr>
+                                <td class="align-middle text-muted" style="white-space:nowrap;">
+                                    <%= new Date(w.warnedAt).toLocaleDateString('en-GB', { day:'numeric', month:'short',
+                                        year:'numeric' }) %>
+                                </td>
+                                <td class="align-middle">
+                                    <span
+                                        class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle rounded-pill px-2"
+                                        style="font-size:11px; text-transform:capitalize;">
+                                        <%= (w.reason || '' ).replace(/_/g, ' ' ) %>
+                                    </span>
+                                </td>
+                                <td class="align-middle text-muted" style="font-size:12.5px;">
+                                    <%= w.note || '—' %>
+                                </td>
+                            </tr>
+                            <% }); %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <% } %>
+
+            <% if (user.role==='citizen' ) { %>
+                <!-- ===================== CITIZEN PROFILE ===================== -->
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <div class="card card-profile shadow-sm overflow-hidden">
+                            <div class="hero-banner"></div>
+
+                            <div class="card-body text-center px-4 pb-5">
+                                <img src="<%= user.profileImage || '/images/default-avatar.png' %>" alt="Profile Image"
+                                    class="rounded-circle shadow-sm profile-avatar">
+
+                                <h2 class="fw-bold mt-3 mb-1">
+                                    <%= user.fullName %>
+                                        <% var vc=user.volunteerCount || 0; var badgeLabel=null, badgeClass=null; if
+                                            (vc>= 20) {
+                                            badgeLabel = '🥇 Gold'; badgeClass = 'bg-warning text-dark'; }
+                                            else if (vc >= 10) { badgeLabel = '🥈 Silver'; badgeClass = 'bg-secondary';
+                                            }
+                                            else if (vc >= 5) { badgeLabel = '🥉 Bronze'; badgeClass = 'bg-warning
+                                            text-dark'; }
+                                            %>
+                                            <% if (badgeLabel) { %>
+                                                <span class="badge <%= badgeClass %> ms-2"
+                                                    style="font-size:0.75rem; vertical-align:middle;">
+                                                    <%= badgeLabel %>
+                                                </span>
+                                                <% } %>
+                                </h2>
+
+                                <p class="text-muted mb-2">
+                                    <i class="bi bi-geo-alt me-1"></i>
+                                    <%= user.location || 'No location added' %>
+                                </p>
+
+                                <p class="text-muted small mb-2">
+                                    Joined <%= user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A' %>
+                                </p>
+
+                                <p class="text-muted small mb-1">
+                                    Following <strong>
+                                        <%= followingCount %>
+                                    </strong>
+                                    organization/community account<%= followingCount===1 ? '' : 's' %>
+                                </p>
+
+                                <% if (user.volunteerCount && user.volunteerCount> 0) { %>
+                                    <p class="text-muted small mb-4">
+                                        Volunteered <strong>
+                                            <%= user.volunteerCount %>
+                                        </strong>
+                                        time<%= user.volunteerCount===1 ? '' : 's' %>
+                                    </p>
+                                    <% } else { %>
+                                        <p class="mb-4"></p>
+                                        <% } %>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <% } else { %>
+                    <!-- ===================== ORG / COMMUNITY ADMIN PROFILE ===================== -->
+                    <div class="row g-4">
+
+                        <!-- CENTER CONTENT -->
+                        <div class="col-md-9 col-lg-8">
+                            <div class="card card-profile shadow-sm overflow-hidden mb-4">
+                                <div class="hero-banner"></div>
+
+                                <div class="card-body text-center px-4 pb-5">
+                                    <img src="<%= user.profileImage || '/images/default-avatar.png' %>"
+                                        alt="Profile Image" class="rounded-circle shadow-sm profile-avatar">
+
+                                    <h2 class="fw-bold mt-3 mb-1">
+                                        <% if (user.role==='communityAdmin' ) { %>
+                                            <%= user.communityName || (user.location + ' Locals' ) %>
+                                                <% } else { %>
+                                                    <%= user.organizationName || user.fullName %>
+                                                        <% } %>
+                                    </h2>
+
+                                    <p class="text-muted mb-2">
+                                        <i class="bi bi-geo-alt me-1"></i>
+                                        <%= user.location || 'No location added' %>
+                                    </p>
+                                </div>
+                            </div>
+
+                            <h5 class="fw-bold mb-3">Posts</h5>
+
+                            <% if (posts.length===0) { %>
+                                <div class="p-5 text-center bg-white rounded-4 border-0 shadow-sm">
+                                    <p class="text-muted mb-0">Nothing posted yet.</p>
+                                </div>
+                                <% } %>
+
+                                    <% posts.forEach(function(post) { %>
+                                        <div class="card card-profile shadow-sm mb-3 border-0">
+                                            <div class="card-body">
+                                                <div class="d-flex justify-content-between align-items-start gap-3">
+                                                    <a href="/admin/reports/post/<%= post._id %>"
+                                                        class="post-link fs-5">
+                                                        <%= post.title %>
+                                                    </a>
+                                                    <small class="text-muted">
+                                                        <%= post.createdAt.toLocaleDateString() %>
+                                                    </small>
+                                                </div>
+
+                                                <p class="mt-2 text-secondary">
+                                                    <%= post.description %>
+                                                </p>
+
+                                                <% if (post.tags && post.tags.length> 0) { %>
+                                                    <div>
+                                                        <% post.tags.forEach(function(tag) { %>
+                                                            <span class="badge badge-tag me-1">#<%= tag %></span>
+                                                            <% }); %>
+                                                    </div>
+                                                    <% } %>
+                                            </div>
+                                        </div>
+                                        <% }); %>
+                        </div>
+
+                        <!-- RIGHT SIDEBAR -->
+                        <div class="col-lg-4">
+                            <div class="card card-profile shadow-sm border-0">
+                                <div class="card-body">
+                                    <h6 class="fw-bold mb-3 text-muted">
+                                        <%= user.role==='communityAdmin' ? 'Community Information'
+                                            : 'Organization Information' %>
+                                    </h6>
+
+                                    <div class="mb-3">
+                                        <span class="info-label">About</span>
+                                        <p class="small mb-0">
+                                            <%= user.bio || 'No bio provided.' %>
+                                        </p>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <span class="info-label">Contact</span>
+                                        <p class="small mb-1">
+                                            <%= user.contactInfo || 'N/A' %>
+                                        </p>
+                                    </div>
+
+                                    <% if (user.socialMediaLink) { %>
+                                        <div class="mb-3">
+                                            <span class="info-label">Website / Social</span>
+                                            <a href="<%= user.socialMediaLink %>" target="_blank"
+                                                class="small text-decoration-none">
+                                                Visit Link
+                                            </a>
+                                        </div>
+                                        <% } %>
+
+                                            <hr>
+
+                                            <div class="mb-3">
+                                                <span class="info-label">Followers</span>
+                                                <p class="small mb-0">
+                                                    <%= followerCount %>
+                                                </p>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <span class="info-label">Following</span>
+                                                <p class="small mb-0">
+                                                    <%= followingCount %>
+                                                </p>
+                                            </div>
+
+                                            <p class="text-muted small mb-0">
+                                                Joined <%= user.createdAt ? new
+                                                    Date(user.createdAt).toLocaleDateString() : 'N/A' %>
+                                            </p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                    <% } %>
+
+</div>
