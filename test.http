@@ -1,0 +1,10 @@
+### BE-05: Valid login attempt
+POST http://localhost:3000/login
+Content-Type: application/x-www-form-urlencoded
+
+email=johnwoodrow153%40gmail.com&password=123456
+### BE-06: Create invalid post
+POST http://localhost:3000/posts/create
+Content-Type: application/x-www-form-urlencoded
+
+title=&description=

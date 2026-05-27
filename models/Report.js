@@ -2,10 +2,20 @@ const mongoose = require("mongoose");
 
 const reportSchema = new mongoose.Schema(
     {
+        reportType: {
+            type: String,
+            enum: ["post", "account"],
+            default: "post",
+        },
         post: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Post",
-            required: true,
+            default: null,
+        },
+        reportedUser: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            default: null,
         },
         reportedBy: {
             type: mongoose.Schema.Types.ObjectId,
@@ -14,13 +24,18 @@ const reportSchema = new mongoose.Schema(
         },
         reason: {
             type: String,
-            enum: ["spam", "misinformation", "harassment", "hate_speech", "scam_fraud", "inappropriate"],
             required: true,
+            trim: true,
         },
         note: {
             type: String,
             default: "",
             trim: true,
+        },
+        status: {
+            type: String,
+            enum: ["pending", "reviewed", "dismissed"],
+            default: "pending",
         },
         warningSent: {
             type: Boolean,

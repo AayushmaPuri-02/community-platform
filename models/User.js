@@ -38,6 +38,10 @@ const userSchema = new mongoose.Schema(
       reportId: { type: mongoose.Schema.Types.ObjectId, ref: "Report" },
       warnedAt: { type: Date, default: Date.now },
     }],
+    isSuspended: { type: Boolean, default: false },
+    suspendedAt: { type: Date, default: null },
+    suspendedReason: { type: String, default: "" },
+    suspendedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
     savedPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: "Post" }],
     volunteerCount: { type: Number, default: 0 },
     notificationPreferences: {

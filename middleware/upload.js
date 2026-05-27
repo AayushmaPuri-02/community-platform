@@ -1,13 +1,13 @@
 const multer = require("multer");
 const { imageStorage, documentStorage } = require("../cloudConfig");
 
-const allowedImageMimeTypes = ["image/jpeg", "image/png", "image/jpg"];
+const allowedImageMimeTypes = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
 
 const imageFileFilter = (req, file, cb) => {
   if (allowedImageMimeTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    const error = new Error("Only JPG, JPEG, and PNG image files are allowed");
+    const error = new Error("Only JPG, JPEG, PNG, and WEBP image files are allowed");
     error.code = "INVALID_IMAGE_TYPE";
     cb(error);
   }

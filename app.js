@@ -26,6 +26,10 @@ const settingsRoutes = require("./routes/settingsRoutes");
 const reportRoutes = require("./routes/reportRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const Notification = require("./models/Notification");
+const { getVolunteerBadge } = require("./utils/volunteerBadge");
+const { getDashboardAnalytics } = require("./utils/dashboardAnalytics");
+const { formatAlertDate } = require("./utils/formatAlertDate");
+const { getReasonLabel, ACCOUNT_REASONS } = require("./utils/reportReasons");
 
 
 const app = express();
@@ -61,6 +65,10 @@ app.use((req, res, next) => {
   res.locals.fullName = req.session.fullName || null;
   res.locals.organizationName = req.session.organizationName || null;
   res.locals.currentPath = req.path;
+  res.locals.getVolunteerBadge = getVolunteerBadge;
+  res.locals.formatAlertDate = formatAlertDate;
+  res.locals.getReasonLabel = getReasonLabel;
+  res.locals.ACCOUNT_REASONS = ACCOUNT_REASONS;
   next();
 });
 
@@ -371,11 +379,8 @@ app.get("/community-dashboard", isLoggedIn, async (req, res) => {
     const followerCount = await Follow.countDocuments({ following: user._id });
     const followingCount = await Follow.countDocuments({ follower: user._id });
 
-    const typeAggregation = await Post.aggregate([
-      { $match: { author: user._id } },
-      { $group: { _id: "$type", count: { $sum: 1 } } }
-    ]);
-    const postTypeCounts = typeAggregation;
+    const { postTypeCounts, postTypeChart, topPerformingPost } =
+      await getDashboardAnalytics(user._id);
 
     // 7-day grace period: show volunteer posts up to 7 days after their event date
     const now = new Date();
@@ -386,7 +391,9 @@ app.get("/community-dashboard", isLoggedIn, async (req, res) => {
       author: user._id,
       type: "volunteer",
       volunteerDate: { $gte: sevenDaysAgo }
-    }).sort({ volunteerDate: 1 });
+    })
+      .populate({ path: "volunteers.user", select: "fullName volunteerCount role" })
+      .sort({ volunteerDate: 1 });
 
     const activeVolunteerPosts = volunteerPosts.filter(p => !p.volunteerDate || new Date(p.volunteerDate) >= now);
     const pastVolunteerPosts = volunteerPosts.filter(p => p.volunteerDate && new Date(p.volunteerDate) < now);
@@ -401,6 +408,8 @@ app.get("/community-dashboard", isLoggedIn, async (req, res) => {
       followerCount,
       followingCount,
       postTypeCounts,
+      postTypeChart,
+      topPerformingPost,
       volunteerPosts,
       activeVolunteerPosts,
       pastVolunteerPosts,
@@ -435,10 +444,8 @@ app.get("/org-dashboard", isLoggedIn, async (req, res) => {
     const followerCount = await Follow.countDocuments({ following: user._id });
     const followingCount = await Follow.countDocuments({ follower: user._id });
 
-    const postTypeCounts = await Post.aggregate([
-      { $match: { author: user._id } },
-      { $group: { _id: "$type", count: { $sum: 1 } } }
-    ]);
+    const { postTypeCounts, postTypeChart, topPerformingPost } =
+      await getDashboardAnalytics(user._id);
 
     // 7-day grace period: show volunteer posts up to 7 days after their event date
     const now2 = new Date();
@@ -449,7 +456,9 @@ app.get("/org-dashboard", isLoggedIn, async (req, res) => {
       author: user._id,
       type: "volunteer",
       volunteerDate: { $gte: sevenDaysAgo2 }
-    }).sort({ volunteerDate: 1 });
+    })
+      .populate({ path: "volunteers.user", select: "fullName volunteerCount role" })
+      .sort({ volunteerDate: 1 });
 
     const activeVolunteerPosts = volunteerPosts.filter(p => !p.volunteerDate || new Date(p.volunteerDate) >= now2);
     const pastVolunteerPosts = volunteerPosts.filter(p => p.volunteerDate && new Date(p.volunteerDate) < now2);
@@ -464,6 +473,8 @@ app.get("/org-dashboard", isLoggedIn, async (req, res) => {
       followerCount,
       followingCount,
       postTypeCounts,
+      postTypeChart,
+      topPerformingPost,
       volunteerPosts,
       activeVolunteerPosts,
       pastVolunteerPosts,

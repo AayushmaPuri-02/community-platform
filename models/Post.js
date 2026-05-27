@@ -55,6 +55,7 @@ const postSchema = new mongoose.Schema(
         attended: { type: Boolean, default: false },
         status: { type: String, enum: ["pending", "rejected", "attended"], default: "pending" },
         rejectionReason: { type: String, default: "" },
+        contributionNote: { type: String, trim: true, default: "" },
       }
     ],
 

@@ -10,7 +10,7 @@ const imageStorage = new CloudinaryStorage({
   cloudinary,
   params: {
     folder: "community-platform-profiles",
-    allowed_formats: ["png", "jpg", "jpeg"],
+    allowed_formats: ["png", "jpg", "jpeg", "webp"],
   },
 });
 
