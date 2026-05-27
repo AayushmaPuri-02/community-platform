@@ -13,10 +13,17 @@
     <div class="col-md-8 col-lg-9">
       <div class="detail-row">
         <span class="detail-label">Name</span>
-        <div>
-          <%= user.communityName || user.organizationName || user.fullName %>
+        <div class="d-inline-flex align-items-center flex-wrap gap-1">
+          <span><%= user.communityName || user.organizationName || user.fullName %></span>
+          <%- include('../partials/volunteerBadge', { user: user }) %>
         </div>
       </div>
+      <% if (user.role === 'citizen' && user.volunteerCount > 0) { %>
+        <div class="detail-row">
+          <span class="detail-label">Volunteer Contributions</span>
+          <div><strong><%= user.volunteerCount %></strong> attended event<%= user.volunteerCount === 1 ? '' : 's' %></div>
+        </div>
+      <% } %>
       <div class="detail-row">
         <span class="detail-label">Email</span>
         <div>
@@ -84,8 +91,16 @@
                           <span class="detail-label">Status</span>
                           <div class="text-capitalize">
                             <%= user.status %>
+                            <% if (user.isSuspended) { %>
+                              <span class="badge bg-danger ms-2">Suspended</span>
+                            <% } %>
                           </div>
                         </div>
+<%- include('../partials/adminSuspensionControls', {
+  targetUser: user,
+  returnTo: '/admin/directory/' + user._id
+}) %>
+
                         <div class="detail-row">
                           <span class="detail-label">Joined</span>
                           <div>
@@ -135,7 +150,64 @@
   </div>
   <% } %>
 
-    <!-- Posts by this user -->
+    <% if (user.role === 'citizen') { %>
+      <!-- Citizen: Recent Activity -->
+      <div class="detail-card">
+        <h6 class="fw-bold mb-3" style="color:#04888D;">Recent Activity</h6>
+
+        <h6 class="fw-semibold mb-2" style="font-size:13px;">Volunteer Contributions</h6>
+        <% if (!attendedVolunteers || attendedVolunteers.length === 0) { %>
+          <p class="text-muted small mb-4">No attended volunteer events yet.</p>
+        <% } else { %>
+          <% attendedVolunteers.forEach(function(item) { %>
+            <div class="py-2 border-bottom">
+              <div class="fw-semibold" style="font-size:13.5px; color:#04888D;"><%= item.post.title %></div>
+              <div class="text-muted small mt-1">
+                <%= item.post.author ? (item.post.author.communityName || item.post.author.organizationName || item.post.author.fullName) : 'Unknown' %>
+                <% if (item.post.volunteerDate) { %>
+                  &middot; <%= new Date(item.post.volunteerDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) %>
+                <% } %>
+              </div>
+              <% if (item.entry.contributionNote) { %>
+                <div class="small mt-1 text-secondary"><strong>Note:</strong> <%= item.entry.contributionNote %></div>
+              <% } %>
+              <span class="badge bg-success mt-1" style="font-size:10px;">Attended</span>
+            </div>
+          <% }); %>
+        <% } %>
+
+        <% if (upcomingVolunteers && upcomingVolunteers.length > 0) { %>
+          <h6 class="fw-semibold mb-2 mt-4" style="font-size:13px;">Upcoming Volunteer Signups</h6>
+          <% upcomingVolunteers.forEach(function(item) { %>
+            <div class="py-2 border-bottom">
+              <div class="fw-semibold" style="font-size:13px;"><%= item.post.title %></div>
+              <div class="text-muted small mt-1">
+                <%= item.post.author ? (item.post.author.communityName || item.post.author.organizationName || item.post.author.fullName) : 'Unknown' %>
+              </div>
+              <span class="badge bg-primary mt-1" style="font-size:10px;">Upcoming</span>
+            </div>
+          <% }); %>
+        <% } %>
+
+        <h6 class="fw-semibold mb-2 mt-4" style="font-size:13px;">Recent Comments</h6>
+        <% if (!recentComments || recentComments.length === 0) { %>
+          <p class="text-muted small mb-0">No comments yet.</p>
+        <% } else { %>
+          <% recentComments.forEach(function(c) { %>
+            <div class="py-2 border-bottom">
+              <div class="text-muted small mb-1">
+                <%= new Date(c.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) %>
+                <% if (c.post && c.post.title) { %>
+                  &middot; on <em><%= c.post.title %></em>
+                <% } %>
+              </div>
+              <div style="font-size:13px; color:#334155;"><%= c.text %></div>
+            </div>
+          <% }); %>
+        <% } %>
+      </div>
+    <% } else { %>
+    <!-- Organization / Community Admin: Posts -->
     <div class="detail-card">
       <h6 class="fw-bold mb-3" style="color:#04888D;">Posts by this user</h6>
 
@@ -167,7 +239,7 @@
                       </span>
                     </td>
                     <td class="align-middle text-muted" style="white-space:nowrap;">
-                      <%= new Date(p.createdAt).toLocaleDateString("en-GB", { day:"numeric", month:"short",
+                      <%= p.type === 'alert' ? formatAlertDate(p.createdAt) : new Date(p.createdAt).toLocaleDateString("en-GB", { day:"numeric", month:"short",
                         year:"numeric" }) %>
                     </td>
                   </tr>
@@ -178,79 +250,105 @@
 
           <!-- One modal per post -->
           <% userPosts.forEach(function(p, pi) { %>
+            <% var typeLabel = p.type === 'communityUpdate' ? 'Community Update' : (p.type ? p.type.charAt(0).toUpperCase() + p.type.slice(1) : 'Post'); %>
             <div class="modal fade" id="postModal-<%= pi %>" tabindex="-1" aria-hidden="true">
-              <div class="modal-dialog modal-dialog-centered modal-lg">
+              <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
                 <div class="modal-content border-0 rounded-4 shadow">
                   <div class="modal-header border-0 pb-0">
-                    <h5 class="modal-title fw-bold" style="font-size:15px;">
+                    <h5 class="modal-title fw-bold pe-3" style="font-size:15px; line-height:1.4;">
                       <%= p.title %>
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                   </div>
                   <div class="modal-body pt-2" style="font-size:13.5px;">
 
+                    <% if (p.images && p.images.length > 0) { %>
+                      <% if (p.images.length === 1) { %>
+                        <img src="<%= p.images[0].url %>" alt="Post image" class="img-fluid rounded-3 mb-3 w-100"
+                          style="max-height:300px; object-fit:cover;">
+                      <% } else { %>
+                        <div id="adminPostCarousel-<%= pi %>" class="carousel slide mb-3 rounded-3 overflow-hidden">
+                          <div class="carousel-inner">
+                            <% p.images.forEach(function(img, imgIdx) { %>
+                              <div class="carousel-item <%= imgIdx === 0 ? 'active' : '' %>">
+                                <img src="<%= img.url %>" class="d-block w-100" alt="Post image <%= imgIdx + 1 %>"
+                                  style="max-height:300px; object-fit:cover;">
+                              </div>
+                            <% }); %>
+                          </div>
+                          <% if (p.images.length > 1) { %>
+                            <button class="carousel-control-prev" type="button" data-bs-target="#adminPostCarousel-<%= pi %>" data-bs-slide="prev">
+                              <span class="carousel-control-prev-icon"></span>
+                            </button>
+                            <button class="carousel-control-next" type="button" data-bs-target="#adminPostCarousel-<%= pi %>" data-bs-slide="next">
+                              <span class="carousel-control-next-icon"></span>
+                            </button>
+                          <% } %>
+                        </div>
+                      <% } %>
+                    <% } %>
+
                     <div class="d-flex gap-2 mb-3 flex-wrap align-items-center">
-                      <span class="badge bg-light text-dark border text-capitalize">
-                        <%= p.type %>
+                      <span class="badge bg-light text-dark border">
+                        <%= typeLabel %>
                       </span>
                       <span class="text-muted" style="font-size:12px;">
-                        <%= new Date(p.createdAt).toLocaleDateString("en-GB", { day:"numeric", month:"long",
+                        <%= p.type === 'alert' ? formatAlertDate(p.createdAt) : new Date(p.createdAt).toLocaleDateString("en-GB", { day:"numeric", month:"long",
                           year:"numeric" }) %>
                       </span>
                     </div>
 
-                    <% if (p.description) { %>
-                      <p style="line-height:1.65; color:#334155; white-space:pre-line; margin-bottom:0;">
-                        <%= p.description %>
-                      </p>
-                      <% } %>
+                    <% if (p.renderedDescription) { %>
+                      <div class="admin-post-markdown" style="line-height:1.65; color:#334155;">
+                        <%- p.renderedDescription %>
+                      </div>
+                    <% } %>
 
-                        <% if (p.type==='alert' ) { %>
-                          <hr class="my-3">
-                          <div class="row g-2" style="font-size:12.5px;">
-                            <% if (p.alertCategory) { %>
-                              <div class="col-sm-4"><span class="text-muted">Category:</span> <strong>
-                                  <%= p.alertCategory %>
-                                </strong></div>
-                              <% } %>
-                                <% if (p.alertStatus) { %>
-                                  <div class="col-sm-4"><span class="text-muted">Status:</span> <strong>
-                                      <%= p.alertStatus %>
-                                    </strong></div>
-                                  <% } %>
-                                    <% if (p.alertRadius) { %>
-                                      <div class="col-sm-4"><span class="text-muted">Radius:</span> <strong>
-                                          <%= p.alertRadius %>
-                                        </strong></div>
-                                      <% } %>
+                    <% if (p.type==='alert' ) { %>
+                      <hr class="my-3">
+                      <div class="row g-2" style="font-size:12.5px;">
+                        <% if (p.alertCategory) { %>
+                          <div class="col-sm-4"><span class="text-muted">Category:</span> <strong><%= p.alertCategory %></strong></div>
+                        <% } %>
+                        <% if (p.alertStatus) { %>
+                          <div class="col-sm-4"><span class="text-muted">Status:</span> <strong><%= p.alertStatus %></strong></div>
+                        <% } %>
+                        <% if (p.alertRadius) { %>
+                          <div class="col-sm-4"><span class="text-muted">Radius:</span> <strong><%= p.alertRadius %></strong></div>
+                        <% } %>
+                      </div>
+                    <% } %>
+
+                    <% if (p.type==='volunteer' || p.type==='event' ) { %>
+                      <hr class="my-3">
+                      <div class="row g-2" style="font-size:12.5px;">
+                        <% if (p.volunteerDate) { %>
+                          <div class="col-sm-6"><span class="text-muted"><%= p.type === 'volunteer' ? 'Volunteer date' : 'Event date' %>:</span>
+                            <strong><%= new Date(p.volunteerDate).toLocaleDateString("en-GB", { day:"numeric", month:"long", year:"numeric" }) %></strong>
                           </div>
-                          <% } %>
-
-                            <% if (p.type==='volunteer' ) { %>
-                              <hr class="my-3">
-                              <div class="row g-2" style="font-size:12.5px;">
-                                <% if (p.volunteerDate) { %>
-                                  <div class="col-sm-6"><span class="text-muted">Date:</span> <strong>
-                                      <%= new Date(p.volunteerDate).toLocaleDateString("en-GB", { day:"numeric",
-                                        month:"long", year:"numeric" }) %>
-                                    </strong></div>
-                                  <% } %>
-                                    <% if (p.maxVolunteers) { %>
-                                      <div class="col-sm-6"><span class="text-muted">Max volunteers:</span> <strong>
-                                          <%= p.maxVolunteers %>
-                                        </strong></div>
-                                      <% } %>
-                              </div>
-                              <% } %>
+                        <% } %>
+                        <% if (p.type==='volunteer' && p.maxVolunteers) { %>
+                          <div class="col-sm-6"><span class="text-muted">Max volunteers:</span> <strong><%= p.maxVolunteers %></strong></div>
+                        <% } %>
+                      </div>
+                    <% } %>
 
                   </div>
                   <div class="modal-footer border-0 pt-0">
+                    <a href="/posts/<%= p._id %>" target="_blank" class="btn btn-outline-primary btn-sm rounded-pill px-3 me-auto">View on site</a>
                     <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Close</button>
                   </div>
                 </div>
               </div>
             </div>
-            <% }); %>
+          <% }); %>
 
-              <% } %>
+        <% } %>
     </div>
+    <% } %>
+
+<style>
+  .admin-post-markdown p:last-child { margin-bottom: 0; }
+  .admin-post-markdown strong { font-weight: 600; }
+  .admin-post-markdown ul, .admin-post-markdown ol { padding-left: 1.25rem; margin-bottom: 0.75rem; }
+</style>

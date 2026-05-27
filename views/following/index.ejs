@@ -1,92 +1,89 @@
 <h2 class="mb-4">Connections</h2>
 
-<% function displayName(u) { return u.communityName || u.organizationName || u.fullName || 'Unknown' ; } function
-  roleBadge(r) { var labels={ citizen: 'Citizen' , organization: 'Organization' , communityAdmin: 'Community Admin' ,
-  systemAdmin: 'System Admin' }; return labels[r] || r; } %>
+<% function displayName(u) { return u.communityName || u.organizationName || u.fullName || 'Unknown'; } %>
+<% function roleBadge(r) {
+  var labels = { citizen: 'Citizen', organization: 'Organization', communityAdmin: 'Community Admin', systemAdmin: 'System Admin' };
+  return labels[r] || r;
+} %>
 
-  <!-- ── Following ─────────────────────────────────────────────────────────── -->
-  <h4 class="mb-3">Following</h4>
+<h4 class="mb-3">Following</h4>
 
-  <% if (followingUsers.length===0) { %>
-    <p class="text-muted">You are not following anyone yet.</p>
-    <% } else { %>
-      <div class="row mb-5">
-        <% followingUsers.forEach(function(u) { %>
-          <div class="col-md-4 mb-4">
-            <div class="card h-100 shadow-sm border-0" style="border-radius:12px;">
-              <div class="card-body d-flex align-items-center gap-3">
+<% if (followingUsers.length === 0) { %>
+  <p class="text-muted">You are not following anyone yet.</p>
+<% } else { %>
+  <div class="row mb-5">
+    <% followingUsers.forEach(function(u) { %>
+      <div class="col-md-4 mb-4">
+        <div class="card h-100 shadow-sm border-0" style="border-radius:12px;">
+          <div class="card-body d-flex align-items-center gap-3">
+            <% if (u.profileImage) { %>
+              <img src="<%= u.profileImage %>" class="rounded-circle border"
+                style="width:50px;height:50px;object-fit:cover;" alt="">
+            <% } else { %>
+              <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center"
+                style="width:50px;height:50px;">
+                <i class="bi bi-person text-secondary"></i>
+              </div>
+            <% } %>
 
-                <div class="d-flex align-items-center gap-3 mb-3">
-                  <% if (u.profileImage) { %>
-                    <img src="<%= u.profileImage %>" class="rounded-circle border"
-                      style="width:50px;height:50px;object-fit:cover;">
-                    <% } else { %>
-                      <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center"
-                        style="width:50px;height:50px;">
-                        <i class="bi bi-person text-secondary"></i>
-                      </div>
-                      <% } %>
-                        <div class="flex-grow-1 min-width-0">
-                          <h6 class="mb-1 fw-bold text-truncate">
-                            <a href="/users/<%= u._id %>?from=following" class="text-decoration-none text-dark">
-                              <%= displayName(u) %>
-                            </a>
-                          </h6>
-                          <span class="badge bg-light text-dark border" style="font-size:0.72rem;">
-                            <%= roleBadge(u.role) %>
-                          </span>
-                        </div>
+            <div class="flex-grow-1 min-width-0">
+              <h6 class="mb-1 fw-bold text-truncate d-inline-flex align-items-center gap-1">
+                <a href="/users/<%= u._id %>?from=following"
+                  class="text-decoration-none text-dark d-inline-flex align-items-center gap-1 min-width-0">
+                  <span class="text-truncate"><%= displayName(u) %></span>
+                  <%- include('../partials/volunteerBadge', { user: u }) %>
+                </a>
+              </h6>
+              <span class="badge bg-light text-dark border" style="font-size:0.72rem;">
+                <%= roleBadge(u.role) %>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+<% } %>
+
+<% if (role === 'organization' || role === 'communityAdmin') { %>
+  <h4 class="mb-3">
+    <%= role === 'communityAdmin' ? 'Residents / Followers' : 'Followers' %>
+  </h4>
+
+  <% if (followerUsers.length === 0) { %>
+    <p class="text-muted">No followers yet.</p>
+  <% } else { %>
+    <div class="row">
+      <% followerUsers.forEach(function(u) { %>
+        <div class="col-md-4 mb-4">
+          <div class="card shadow-sm border-0" style="border-radius:12px;">
+            <div class="card-body d-flex align-items-center gap-3">
+              <% if (u.profileImage) { %>
+                <img src="<%= u.profileImage %>" class="rounded-circle border"
+                  style="width:50px;height:50px;object-fit:cover;" alt="">
+              <% } else { %>
+                <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center"
+                  style="width:50px;height:50px;">
+                  <i class="bi bi-person text-secondary"></i>
                 </div>
+              <% } %>
 
+              <div class="flex-grow-1 min-width-0">
+                <h6 class="mb-1 fw-bold text-truncate d-inline-flex align-items-center gap-1">
+                  <a href="/users/<%= u._id %>?from=followers"
+                    class="text-decoration-none text-dark d-inline-flex align-items-center gap-1 min-width-0">
+                    <span class="text-truncate"><%= displayName(u) %></span>
+                    <%- include('../partials/volunteerBadge', { user: u }) %>
+                  </a>
+                </h6>
+                <span class="badge bg-light text-dark border" style="font-size:0.72rem;">
+                  <%= roleBadge(u.role) %>
+                </span>
               </div>
             </div>
           </div>
-          <% }); %>
-      </div>
-      <% } %>
-
-        <!-- ── Followers (org / communityAdmin only) ─────────────────────────────── -->
-        <% if (role==='organization' || role==='communityAdmin' ) { %>
-
-          <h4 class="mb-3">
-            <%= role==='communityAdmin' ? 'Residents / Followers' : 'Followers' %>
-          </h4>
-
-          <% if (followerUsers.length===0) { %>
-            <p class="text-muted">No followers yet.</p>
-            <% } else { %>
-              <div class="row">
-                <% followerUsers.forEach(function(u) { %>
-                  <div class="col-md-4 mb-4">
-                    <div class="card shadow-sm border-0" style="border-radius:12px;">
-                      <div class="card-body d-flex align-items-center gap-3">
-
-                        <% if (u.profileImage) { %>
-                          <img src="<%= u.profileImage %>" class="rounded-circle border"
-                            style="width:50px;height:50px;object-fit:cover;">
-                          <% } else { %>
-                            <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center"
-                              style="width:50px;height:50px;">
-                              <i class="bi bi-person text-secondary"></i>
-                            </div>
-                            <% } %>
-
-                              <div class="flex-grow-1 min-width-0">
-                                <h6 class="mb-1 fw-bold text-truncate">
-                                  <a href="/users/<%= u._id %>?from=followers" class="text-decoration-none text-dark">
-                                    <%= displayName(u) %>
-                                  </a>
-                                </h6>
-                                <span class="badge bg-light text-dark border" style="font-size:0.72rem;">
-                                  <%= roleBadge(u.role) %>
-                                </span>
-                              </div>
-
-                      </div>
-                    </div>
-                  </div>
-                  <% }); %>
-              </div>
-              <% } %>
-
-                <% } %>
+        </div>
+      <% }); %>
+    </div>
+  <% } %>
+<% } %>

@@ -1,6 +1,35 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<div class="py-4 px-2">
+<style>
+    .dash-recent-post {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .dash-recent-post__main {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .dash-recent-post__title {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
+    }
+
+    .dash-recent-post__date {
+        flex: 0 0 auto;
+        white-space: nowrap;
+        text-align: right;
+        line-height: 1.4;
+    }
+</style>
+
+<div class="py-3 px-2">
 
     <!-- HEADER -->
     <div class="mb-4">
@@ -26,7 +55,7 @@
     </div>
 
     <!-- STAT CARDS -->
-    <div class="row g-3 mb-4">
+    <div class="row g-3 mb-3">
         <div class="col-6 col-md-4 col-lg-2">
             <div class="card border-0 shadow-sm rounded-4 text-center p-3">
                 <div class="fw-bold" style="font-size:1.7rem; color:#04888D;">
@@ -69,63 +98,114 @@
         </div>
     </div>
 
-    <!-- CHART + LATEST POSTS -->
-    <div class="row g-4">
+    <!-- BAR CHART + RECENT POSTS -->
+    <div class="row g-3 mb-3 align-items-stretch">
 
-        <!-- PIE CHART -->
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
-                <h6 class="fw-bold mb-3 text-muted">Posts by Type</h6>
-                <% if (!postTypeCounts || postTypeCounts.length===0) { %>
-                    <div class="text-center py-4">
-                        <i class="bi bi-bar-chart text-muted" style="font-size:2rem;"></i>
-                        <p class="text-muted small mt-2 mb-0">No data to display.</p>
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 h-100">
+                <h6 class="fw-bold mb-2 mb-md-3">Posts by Type</h6>
+                <% if (!postTypeChart || !postTypeChart.hasData) { %>
+                    <div class="text-center py-4 d-flex flex-column justify-content-center" style="min-height:220px;">
+                        <i class="bi bi-bar-chart-line text-muted" style="font-size:2rem;"></i>
+                        <p class="text-muted small mt-2 mb-0">No posts yet. Create a post to see distribution.</p>
                     </div>
-                    <% } else { %>
+                <% } else { %>
+                    <div style="position:relative; height:240px;">
                         <canvas id="postTypeChart"></canvas>
-                        <script type="application/json"
-                            id="postTypeCountsData"><%- JSON.stringify(postTypeCounts || []) %></script>
-                        <% } %>
+                    </div>
+                    <script type="application/json" id="postTypeChartData"><%- JSON.stringify(postTypeChart) %></script>
+                <% } %>
             </div>
         </div>
 
-        <!-- LATEST POSTS -->
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
-                <h6 class="fw-bold mb-3 text-muted">Recent Posts</h6>
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 h-100 overflow-hidden">
+                <h6 class="fw-bold mb-2 mb-md-3 text-muted">Recent Posts</h6>
                 <% if (recentPosts.length===0) { %>
-                    <p class="text-muted small mb-0">No posts yet.</p>
-                    <% } else { %>
-                        <% recentPosts.forEach(function(post) { %>
-                            <div class="d-flex justify-content-between align-items-start py-2 border-bottom">
-                                <div class="flex-grow-1 me-3">
-                                    <a href="/posts/<%= post._id %>" class="text-decoration-none fw-semibold"
-                                        style="color:#04888D; font-size:0.95rem;">
-                                        <%= post.title %>
-                                    </a>
-                                    <div class="mt-1">
-                                        <span class="badge bg-light text-dark border text-capitalize"
-                                            style="font-size:0.72rem;">
-                                            <%= post.type %>
-                                        </span>
-                                    </div>
+                    <p class="text-muted small mb-0 py-3">No posts yet.</p>
+                <% } else { %>
+                    <% recentPosts.forEach(function(post, idx) { %>
+                        <div class="dash-recent-post py-2 <%= idx < recentPosts.length - 1 ? 'border-bottom' : '' %>">
+                            <div class="dash-recent-post__main">
+                                <a href="/posts/<%= post._id %>"
+                                    class="dash-recent-post__title text-decoration-none fw-semibold"
+                                    style="color:#04888D; font-size:0.95rem;"
+                                    title="<%= post.title %>">
+                                    <%= post.title %>
+                                </a>
+                                <div class="mt-1">
+                                    <span class="badge bg-light text-dark border text-capitalize"
+                                        style="font-size:0.72rem;">
+                                        <%= post.type %>
+                                    </span>
                                 </div>
-                                <small class="text-muted flex-shrink-0 post-date"
-                                    data-created="<%= post.createdAt.toISOString() %>"></small>
                             </div>
-                            <% }); %>
-                                <% } %>
+                            <% if (post.type === 'alert') { %>
+                                <small class="text-muted dash-recent-post__date"><%= formatAlertDate(post.createdAt) %></small>
+                            <% } else { %>
+                                <small class="text-muted dash-recent-post__date post-date"
+                                    data-created="<%= post.createdAt.toISOString() %>"></small>
+                            <% } %>
+                        </div>
+                    <% }); %>
+                <% } %>
             </div>
         </div>
 
     </div>
 
-</div>
+    <!-- TOP PERFORMING + VOLUNTEER POSTS -->
+    <div class="row g-3 mb-3 align-items-stretch">
 
-<% if (volunteerPosts && volunteerPosts.length> 0) { %>
-    <div class="py-2 px-2 pb-4">
-        <div class="card border-0 shadow-sm rounded-4 p-4">
-            <h6 class="fw-bold mb-3 text-muted">Volunteer Posts</h6>
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 h-100">
+                <h6 class="fw-bold mb-2 mb-md-3">Top Performing Post</h6>
+                <% if (!topPerformingPost) { %>
+                    <div class="text-muted small py-3">
+                        <i class="bi bi-graph-up-arrow me-1"></i>
+                        No posts yet. Your most engaging post will appear here.
+                    </div>
+                <% } else { %>
+                    <% var tpType = topPerformingPost.type || ''; %>
+                    <% var tpTypeLabel = tpType === 'communityUpdate' ? 'Community Update' : tpType.charAt(0).toUpperCase() + tpType.slice(1); %>
+                    <a href="/posts/<%= topPerformingPost._id %>" class="fw-semibold text-decoration-none d-block mb-2"
+                        style="color:#04888D; font-size:0.95rem; line-height:1.45;">
+                        <%= topPerformingPost.title %>
+                    </a>
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                        <span class="badge bg-light text-dark border text-capitalize" style="font-size:0.72rem;">
+                            <%= tpTypeLabel %>
+                        </span>
+                        <small class="text-muted">
+                            <%= new Date(topPerformingPost.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) %>
+                        </small>
+                    </div>
+                    <ul class="list-unstyled mb-0 small">
+                        <li class="d-flex align-items-center gap-2 mb-2 text-secondary">
+                            <i class="bi bi-heart-fill" style="color:#dc3545;"></i>
+                            <span><strong><%= topPerformingPost.likeCount %></strong> Like<%= topPerformingPost.likeCount === 1 ? '' : 's' %></span>
+                        </li>
+                        <li class="d-flex align-items-center gap-2 mb-2 text-secondary">
+                            <i class="bi bi-chat-dots-fill" style="color:#04888D;"></i>
+                            <span><strong><%= topPerformingPost.commentCount %></strong> Comment<%= topPerformingPost.commentCount === 1 ? '' : 's' %></span>
+                        </li>
+                        <% if (topPerformingPost.type === 'volunteer') { %>
+                            <li class="d-flex align-items-center gap-2 text-secondary">
+                                <i class="bi bi-people-fill" style="color:#0d6efd;"></i>
+                                <span><strong><%= topPerformingPost.volunteerSignupCount %></strong> Volunteer<%= topPerformingPost.volunteerSignupCount === 1 ? '' : 's' %> Joined</span>
+                            </li>
+                        <% } %>
+                    </ul>
+                <% } %>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4 p-3 p-md-4 h-100">
+                <h6 class="fw-bold mb-2 mb-md-3 text-muted">Volunteer Posts</h6>
+                <% if (!volunteerPosts || volunteerPosts.length === 0) { %>
+                    <p class="text-muted small mb-0 py-2">No active volunteer posts in the last 7 days.</p>
+                <% } else { %>
             <div class="table-responsive">
                 <table class="table table-hover mb-0" style="font-size:0.9rem;">
                     <thead class="table-light">
@@ -179,9 +259,15 @@
                     </tbody>
                 </table>
             </div>
+                <% } %>
+            </div>
         </div>
+
     </div>
 
+</div>
+
+<% if (volunteerPosts && volunteerPosts.length> 0) { %>
     <!-- Volunteer modals — one per volunteer post -->
     <% volunteerPosts.forEach(function(vp, vpIdx) { %>
         <div class="modal fade" id="volModal-<%= vpIdx %>" tabindex="-1" aria-hidden="true">
@@ -204,8 +290,11 @@
                                                 <button class="accordion-button collapsed py-2 px-3" type="button"
                                                     data-bs-toggle="collapse"
                                                     data-bs-target="#dv-<%= vpIdx %>-<%= vi %>">
-                                                    <span class="fw-semibold me-2">
+                                                    <span class="fw-semibold me-2 d-inline-flex align-items-center gap-1">
                                                         <%= v.fullName %>
+                                                        <% if (v.user) { %>
+                                                            <%- include('../partials/volunteerBadge', { user: v.user }) %>
+                                                        <% } %>
                                                     </span>
                                                     <% var vHeaderStatus=v.status || (v.attended ? 'attended'
                                                         : 'pending' ); %>
@@ -238,8 +327,9 @@
                                                                     : "N/A" %>
                                                             </p>
                                                             <% if (v.user) { %>
+                                                                <% var volunteerUserId = v.user._id || v.user; %>
                                                                 <p class="mb-2">
-                                                                    <a href="/users/<%= v.user %>" target="_blank"
+                                                                    <a href="/users/<%= volunteerUserId %>" target="_blank"
                                                                         class="btn btn-sm btn-outline-secondary rounded-pill px-3"
                                                                         style="font-size:0.8rem;">
                                                                         <i class="bi bi-person me-1"></i>View Profile
@@ -261,6 +351,12 @@
                                                                                 class="badge bg-success px-3 py-2">Attended
                                                                                 —
                                                                                 Permanent</span>
+                                                                            <% if (v.contributionNote) { %>
+                                                                                <p class="text-muted small mt-2 mb-0">
+                                                                                    <strong>Contribution Note:</strong>
+                                                                                    <%= v.contributionNote %>
+                                                                                </p>
+                                                                                <% } %>
                                                                             <% } else if (vStatus==='rejected' ) { %>
                                                                                 <span
                                                                                     class="badge bg-danger px-3 py-2">Rejected</span>
@@ -275,20 +371,47 @@
                                                                                                 class="d-flex gap-2 flex-wrap align-items-start">
                                                                                                 <% if (canMarkAttend) {
                                                                                                     %>
-                                                                                                    <form
-                                                                                                        action="/posts/<%= vp._id %>/volunteer/<%= v._id %>/attend"
-                                                                                                        method="POST"
-                                                                                                        class="m-0">
-                                                                                                        <input
-                                                                                                            type="hidden"
-                                                                                                            name="fromDashboard"
-                                                                                                            value="1">
-                                                                                                        <button
-                                                                                                            type="submit"
-                                                                                                            class="btn btn-sm btn-outline-success rounded-pill px-3">Mark
-                                                                                                            as
-                                                                                                            Attended</button>
-                                                                                                    </form>
+                                                                                                    <button
+                                                                                                        type="button"
+                                                                                                        class="btn btn-sm btn-outline-success rounded-pill px-3"
+                                                                                                        data-bs-toggle="collapse"
+                                                                                                        data-bs-target="#attendForm-<%= vpIdx %>-<%= vi %>">
+                                                                                                        Mark as Attended
+                                                                                                    </button>
+                                                                                                    <div class="collapse mt-2 w-100"
+                                                                                                        id="attendForm-<%= vpIdx %>-<%= vi %>">
+                                                                                                        <form
+                                                                                                            action="/posts/<%= vp._id %>/volunteer/<%= v._id %>/attend"
+                                                                                                            method="POST"
+                                                                                                            class="border rounded-3 p-3 bg-light">
+                                                                                                            <input
+                                                                                                                type="hidden"
+                                                                                                                name="fromDashboard"
+                                                                                                                value="1">
+                                                                                                            <label
+                                                                                                                for="contributionNote-<%= vpIdx %>-<%= vi %>"
+                                                                                                                class="form-label small fw-semibold mb-1">Contribution
+                                                                                                                Note
+                                                                                                                <span
+                                                                                                                    class="text-muted fw-normal">(optional)</span></label>
+                                                                                                            <textarea
+                                                                                                                id="contributionNote-<%= vpIdx %>-<%= vi %>"
+                                                                                                                name="contributionNote"
+                                                                                                                class="form-control form-control-sm mb-2"
+                                                                                                                rows="3"
+                                                                                                                maxlength="200"
+                                                                                                                placeholder="Describe how this volunteer contributed..."></textarea>
+                                                                                                            <div
+                                                                                                                class="form-text mb-2">
+                                                                                                                Max 200
+                                                                                                                characters.
+                                                                                                            </div>
+                                                                                                            <button
+                                                                                                                type="submit"
+                                                                                                                class="btn btn-sm btn-success rounded-pill px-3">Confirm
+                                                                                                                Attendance</button>
+                                                                                                        </form>
+                                                                                                    </div>
                                                                                                     <% } else { %>
                                                                                                         <button
                                                                                                             type="button"
@@ -370,36 +493,51 @@
                             }
                         });
 
-                        // Chart
+                        // Bar chart
                         var canvas = document.getElementById('postTypeChart');
-                        if (!canvas) return;
+                        var chartDataEl = document.getElementById('postTypeChartData');
+                        if (!canvas || !chartDataEl) return;
 
-                        var rawData = JSON.parse(document.getElementById('postTypeCountsData').textContent || '[]');
-                        if (!rawData || rawData.length === 0) return;
-
-                        var labels = rawData.map(function (item) {
-                            var k = item._id || "unknown";
-                            return k.charAt(0).toUpperCase() + k.slice(1);
-                        });
-                        var values = rawData.map(function (item) { return item.count; });
-                        var colors = ['#04888D', '#dc3545', '#f59e0b', '#6c757d', '#0d6efd', '#198754'];
+                        var chartData = JSON.parse(chartDataEl.textContent || '{}');
+                        if (!chartData.hasData) return;
 
                         new Chart(canvas, {
-                            type: 'pie',
+                            type: 'bar',
                             data: {
-                                labels: labels,
+                                labels: chartData.labels,
                                 datasets: [{
-                                    data: values,
-                                    backgroundColor: colors.slice(0, values.length),
-                                    borderWidth: 1
+                                    label: 'Posts',
+                                    data: chartData.values,
+                                    backgroundColor: chartData.colors,
+                                    borderRadius: 6,
+                                    maxBarThickness: 44
                                 }]
                             },
                             options: {
-                                plugins: {
-                                    legend: { position: 'bottom', labels: { font: { size: 12 }, padding: 12 } }
-                                },
                                 responsive: true,
-                                maintainAspectRatio: true
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: { display: false },
+                                    tooltip: {
+                                        callbacks: {
+                                            label: function (ctx) {
+                                                var n = ctx.parsed.y;
+                                                return n + (n === 1 ? ' post' : ' posts');
+                                            }
+                                        }
+                                    }
+                                },
+                                scales: {
+                                    y: {
+                                        beginAtZero: true,
+                                        ticks: { stepSize: 1, precision: 0 },
+                                        grid: { color: 'rgba(0,0,0,0.06)' }
+                                    },
+                                    x: {
+                                        grid: { display: false },
+                                        ticks: { font: { size: 11 } }
+                                    }
+                                }
                             }
                         });
 

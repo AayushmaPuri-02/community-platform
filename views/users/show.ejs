@@ -68,18 +68,9 @@
                 <img src="<%= user.profileImage || '/images/default-avatar.png' %>" alt="Profile Image"
                   class="rounded-circle shadow-sm profile-avatar">
 
-                <h2 class="fw-bold mt-3 mb-1">
-                  <%= user.fullName %>
-                    <% var vc=user.volunteerCount || 0; var badgeLabel=null, badgeClass=null; if (vc>= 20) { badgeLabel
-                      = '🥇 Gold'; badgeClass = 'bg-warning text-dark'; }
-                      else if (vc >= 10) { badgeLabel = '🥈 Silver'; badgeClass = 'bg-secondary'; }
-                      else if (vc >= 5) { badgeLabel = '🥉 Bronze'; badgeClass = 'bg-warning text-dark'; }
-                      %>
-                      <% if (badgeLabel) { %>
-                        <span class="badge <%= badgeClass %> ms-2" style="font-size:0.75rem; vertical-align:middle;">
-                          <%= badgeLabel %>
-                        </span>
-                        <% } %>
+                <h2 class="fw-bold mt-3 mb-1 d-inline-flex align-items-center justify-content-center flex-wrap gap-1">
+                  <span><%= user.fullName %></span>
+                  <%- include('../partials/volunteerBadge', { user: user }) %>
                 </h2>
 
                 <p class="text-muted mb-2">
@@ -98,22 +89,13 @@
                 </p>
 
                 <% if (user.volunteerCount && user.volunteerCount> 0) { %>
-                  <% var vc2=user.volunteerCount; %>
-                    <% var partLabel=vc2>= 10 ? 'Highly Active' : vc2 >= 5 ? 'Regular Volunteer' : 'Participated'; %>
-                      <% var partColor=vc2>= 10 ? '#166534' : vc2 >= 5 ? '#1e40af' : '#374151'; %>
-                        <% var partBg=vc2>= 10 ? '#dcfce7' : vc2 >= 5 ? '#dbeafe' : '#f1f5f9'; %>
-                          <p class="text-muted small mb-4">
-                            <strong>
-                              <%= vc2 %>
-                            </strong> volunteer contribution<%= vc2===1 ? '' : 's' %>
-                              <span class="ms-2 badge rounded-pill"
-                                style="font-size:0.7rem; background:<%= partBg %>; color:<%= partColor %>; font-weight:500;">
-                                <%= partLabel %>
-                              </span>
-                          </p>
-                          <% } else { %>
-                            <p class="mb-4"></p>
-                            <% } %>
+                  <p class="text-muted small mb-4">
+                    <strong><%= user.volunteerCount %></strong>
+                    volunteer contribution<%= user.volunteerCount === 1 ? '' : 's' %>
+                  </p>
+                <% } else { %>
+                  <p class="mb-4"></p>
+                <% } %>
 
                               <div class="d-flex justify-content-center gap-2 flex-wrap">
                                 <% if (userId && userId.toString()===user._id.toString()) { %>
@@ -124,6 +106,13 @@
                                       { %>
                                       <a href="/messages/<%= user._id %>"
                                         class="btn btn-primary btn-sm px-4">Message</a>
+                                      <button type="button"
+                                        class="btn btn-outline-danger btn-sm rounded-circle p-0 d-inline-flex align-items-center justify-content-center"
+                                        style="width:34px;height:34px;"
+                                        data-bs-toggle="modal" data-bs-target="#reportProfileModal"
+                                        title="Report Profile">
+                                        <i class="bi bi-flag"></i>
+                                      </button>
                                       <% } %>
                               </div>
               </div>
@@ -211,7 +200,7 @@
                                 Contributions</h5>
                               <% attendedVolunteers.forEach(function(item) { %>
                                 <div class="d-flex justify-content-between align-items-start py-2 border-bottom">
-                                  <div>
+                                  <div class="flex-grow-1 pe-3">
                                     <a href="/posts/<%= item.post._id %>" class="fw-semibold text-decoration-none"
                                       style="color:#04888D;">
                                       <%= item.post.title %>
@@ -224,6 +213,12 @@
                                             day:"numeric", month:"long", year:"numeric" }) %>
                                             <% } %>
                                     </div>
+                                    <% if (item.entry.contributionNote) { %>
+                                      <div class="small mt-2 text-secondary">
+                                        <strong>Contribution Note:</strong>
+                                        <%= item.entry.contributionNote %>
+                                      </div>
+                                    <% } %>
                                   </div>
                                   <span class="badge bg-success ms-3 flex-shrink-0">Attended</span>
                                 </div>
@@ -251,22 +246,33 @@
                                   <div class="col-lg-8">
                                     <div class="card card-profile shadow-sm border-0">
                                       <div class="card-body p-4">
-                                        <h5 class="fw-bold mb-3">Volunteering</h5>
+                                        <h5 class="fw-bold mb-3">Volunteer Contributions</h5>
                                         <% attendedVolunteers.forEach(function(item) { %>
-                                          <div class="py-2 border-bottom text-muted small">
-                                            <i class="bi bi-patch-check-fill text-success me-1"></i>
-                                            <strong>
-                                              <%= user.fullName %>
-                                            </strong> volunteered at
-                                            <strong>
-                                              <%= item.post.author ? (item.post.author.communityName ||
-                                                item.post.author.organizationName || item.post.author.fullName)
-                                                : "Unknown" %>
-                                            </strong>
-                                            <% if (item.post.volunteerDate) { %>
-                                              &middot; <%= new Date(item.post.volunteerDate).toLocaleDateString("en-GB",
-                                                { day:"numeric", month:"long", year:"numeric" }) %>
+                                          <div class="py-3 border-bottom">
+                                            <div class="d-flex justify-content-between align-items-start gap-2">
+                                              <div>
+                                                <a href="/posts/<%= item.post._id %>"
+                                                  class="fw-semibold text-decoration-none" style="color:#04888D;">
+                                                  <%= item.post.title %>
+                                                </a>
+                                                <div class="text-muted small mt-1">
+                                                  <%= item.post.author ? (item.post.author.communityName ||
+                                                    item.post.author.organizationName || item.post.author.fullName)
+                                                    : "Unknown" %>
+                                                    <% if (item.post.volunteerDate) { %>
+                                                      &middot; <%= new Date(item.post.volunteerDate).toLocaleDateString("en-GB",
+                                                        { day:"numeric", month:"long", year:"numeric" }) %>
+                                                      <% } %>
+                                                </div>
+                                                <% if (item.entry.contributionNote) { %>
+                                                  <div class="small mt-2 text-secondary">
+                                                    <strong>Contribution Note:</strong>
+                                                    <%= item.entry.contributionNote %>
+                                                  </div>
                                                 <% } %>
+                                              </div>
+                                              <span class="badge bg-success flex-shrink-0">Attended</span>
+                                            </div>
                                           </div>
                                           <% }); %>
                                       </div>
@@ -327,6 +333,13 @@
                                                           class="btn btn-sm btn-outline-secondary px-3 py-2">
                                                           <i class="bi bi-chat-dots me-1"></i>Message
                                                         </a>
+                                                        <button type="button"
+                                                          class="btn btn-sm btn-outline-danger rounded-circle p-0 d-inline-flex align-items-center justify-content-center"
+                                                          style="width:34px;height:34px;"
+                                                          data-bs-toggle="modal" data-bs-target="#reportProfileModal"
+                                                          title="Report Profile">
+                                                          <i class="bi bi-flag"></i>
+                                                        </button>
                                                         <% } %>
                                             </div>
                                           </div>
@@ -363,7 +376,7 @@
                                                       <%= post.title %>
                                                     </a>
                                                     <small class="text-muted flex-shrink-0" style="font-size:0.78rem;">
-                                                      <%= post.createdAt.toLocaleDateString('en-GB', { day:'numeric',
+                                                      <%= post.type === 'alert' ? formatAlertDate(post.createdAt) : post.createdAt.toLocaleDateString('en-GB', { day:'numeric',
                                                         month:'short', year:'numeric' }) %>
                                                     </small>
                                                   </div>
@@ -493,6 +506,46 @@
                                       </div>
                                     </div>
                                     <% } %>
+
+<% if (userId && userId.toString() !== user._id.toString() && role !== 'systemAdmin' && user.role !== 'systemAdmin') { %>
+  <div class="modal fade" id="reportProfileModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 rounded-4 shadow">
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title fw-bold"><i class="bi bi-flag me-2 text-danger"></i>Report Profile</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form action="/users/<%= user._id %>/report" method="POST">
+          <div class="modal-body">
+            <p class="text-muted small mb-3">
+              Report <strong><%= user.communityName || user.organizationName || user.fullName %></strong> if their profile or behaviour violates community guidelines.
+            </p>
+            <div class="mb-3">
+              <label class="form-label fw-semibold small">Reason <span class="text-danger">*</span></label>
+              <select name="reason" class="form-select" required>
+                <option value="">Select a reason</option>
+                <% ACCOUNT_REASONS.forEach(function(r) { %>
+                  <option value="<%= r.value %>"><%= r.label %></option>
+                <% }); %>
+              </select>
+            </div>
+            <div class="mb-0">
+              <label class="form-label fw-semibold small">Additional details <span class="text-muted">(optional)</span></label>
+              <textarea name="note" class="form-control" rows="4" maxlength="300"
+                placeholder="Describe what happened..."></textarea>
+              <div class="form-text">Max 300 characters.</div>
+            </div>
+          </div>
+          <div class="modal-footer border-0">
+            <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-danger rounded-pill px-4">Submit Report</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+<% } %>
+
 </div>
 
 <script>

@@ -121,7 +121,6 @@
         font-weight: 600;
         padding: 2px 7px;
         border-radius: 999px;
-        margin-bottom: 3px;
     }
 
     .cat-Safety {
@@ -181,6 +180,10 @@
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         pointer-events: none;
         white-space: nowrap;
+    }
+
+    .alert-list-item[data-post-id] {
+        cursor: pointer;
     }
 
     @media (max-width: 768px) {
@@ -256,6 +259,7 @@
     <!-- RIGHT MAP AREA -->
     <div class="alerts-right">
         <div id="alertsMap"></div>
+        <%- include('../partials/alertDetailPanel') %>
         <div class="map-overlay-msg" id="mapOverlayMsg">
             <i class="bi bi-map me-1"></i>Map loading&hellip;
         </div>
@@ -263,6 +267,9 @@
 
 </div><!-- /alerts-page-wrap -->
 
+<script src="/js/formatAlertDate.js"></script>
+<script src="/js/alertStatus.js"></script>
+<script src="/js/alertDetailPanel.js"></script>
 <script>
     // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -289,16 +296,6 @@
         return m[cat] || 'cat-default';
     }
 
-    function timeAgo(dateStr) {
-        var diff = Date.now() - new Date(dateStr).getTime();
-        var mins = Math.floor(diff / 60000);
-        var hours = Math.floor(diff / 3600000);
-        if (mins < 1) return 'just now';
-        if (mins < 60) return mins + ' min ago';
-        if (hours < 24) return hours + ' hr' + (hours === 1 ? '' : 's') + ' ago';
-        return new Date(dateStr).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-    }
-
     // ── Render list ──────────────────────────────────────────────────────────────
 
     function renderAlerts(alerts, usingLocation) {
@@ -316,30 +313,26 @@
             var catLabel = a.alertCategory || 'Alert';
             var catCls = categoryClass(a.alertCategory);
             var status = a.alertStatus === 'Resolved' ? 'Resolved' : 'Active';
-            var statusBadge = status === 'Resolved'
-                ? '<span class="badge bg-info text-dark" style="font-size:10px;">Resolved</span>'
-                : '<span class="badge bg-success" style="font-size:10px;">Active</span>';
             var desc = (a.description || '').length > 90 ? a.description.slice(0, 90).trimEnd() + '\u2026' : (a.description || '');
             var loc = a.locationName || '';
             var radius = a.alertRadius ? (' \u00b7 ' + a.alertRadius) : '';
             var author = a.authorName ? ('By ' + a.authorName) : '';
-            var time = timeAgo(a.createdAt);
+            var time = formatAlertDate(a.createdAt);
             var distStr = (typeof a.distanceKm === 'number')
-                ? '<span class="ms-2" style="color:#3b82f6;font-weight:600;">' + a.distanceKm.toFixed(1) + ' km away</span>'
+                ? '<div class="ali-meta mb-1" style="color:#3b82f6;font-weight:600;"><i class="bi bi-geo-alt me-1"></i>' + a.distanceKm.toFixed(1) + ' km away</div>'
                 : '';
 
-            html += '<a href="/posts/' + a._id + '" class="text-decoration-none">';
-            html += '<div class="alert-list-item" style="' + (status === 'Resolved' ? 'opacity:0.75;' : '') + '">';
-            html += '<div class="d-flex align-items-center gap-2 mb-1">';
+            html += '<div class="alert-list-item" data-post-id="' + a._id + '" style="' + (status === 'Resolved' ? 'opacity:0.75;' : '') + '">';
+            html += '<div class="alert-card-header">';
             html += '<span class="ali-category ' + catCls + '">' + catLabel + '</span>';
-            html += statusBadge;
-            html += distStr;
+            html += renderAlertStatus(status);
             html += '</div>';
+            if (distStr) html += distStr;
             html += '<div class="ali-title">' + a.title + '</div>';
             if (loc) html += '<div class="ali-meta"><i class="bi bi-geo-alt me-1"></i>' + loc + radius + '</div>';
             if (desc) html += '<div class="ali-meta mt-1" style="color:#64748b;">' + desc + '</div>';
             html += '<div class="ali-meta mt-1">' + time + (author ? ' \u00b7 ' + author : '') + '</div>';
-            html += '</div></a>';
+            html += '</div>';
         });
 
         list.innerHTML = html;
@@ -603,7 +596,6 @@
 
         var userMarker = null;
         var alertMarkers = [];
-        var infoWindow = new google.maps.InfoWindow();
 
         var typeColors = {
             // by post type
@@ -681,21 +673,12 @@
                     },
                 });
 
-                var catLabel = a.alertCategory || 'Alert';
-                var distText = (typeof a.distanceKm === 'number')
-                    ? '<div style="color:#3b82f6;font-size:11.5px;margin-top:2px;">' + a.distanceKm.toFixed(1) + ' km away</div>'
-                    : '';
-                var content =
-                    '<div style="font-family:sans-serif;font-size:13px;max-width:220px;line-height:1.5;">' +
-                    '<div style="font-weight:700;color:#1e293b;margin-bottom:3px;">' + a.title + '</div>' +
-                    '<div style="font-size:11.5px;color:#64748b;">' + catLabel + '</div>' +
-                    distText +
-                    '<div style="margin-top:6px;"><a href="/posts/' + a._id + '" style="color:#04888D;font-size:12px;font-weight:600;">View post &rarr;</a></div>' +
-                    '</div>';
+                var postId = a._id;
 
                 marker.addListener('click', function () {
-                    infoWindow.setContent(content);
-                    infoWindow.open(map, marker);
+                    if (typeof window.openAlertDetailPanel === 'function') {
+                        window.openAlertDetailPanel(postId);
+                    }
                 });
 
                 alertMarkers.push(marker);

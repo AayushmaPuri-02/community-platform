@@ -52,12 +52,16 @@
               <%= post.author.communityName || post.author.organizationName || post.author.fullName %>
             </a>
             <div class="text-muted" style="font-size:11.5px;">
-              <% var _diff=Date.now() - new Date(post.createdAt).getTime(); var _mins=Math.floor(_diff / 60000); var
-                _hrs=Math.floor(_diff / 3600000); var _timeStr; if (_mins < 1) _timeStr='just now' ; else if (_mins <
-                60) _timeStr=_mins + ' min ago' ; else if (_hrs < 24) _timeStr=_hrs + ' hour' + (_hrs===1 ? '' : 's' )
-                + ' ago' ; else _timeStr=new Date(post.createdAt).toLocaleDateString('en-GB', { day:'numeric',
-                month:'long', year:'numeric' }); %>
-                <%= _timeStr %>
+              <% if (post.type === 'alert') { %>
+                <%= formatAlertDate(post.createdAt) %>
+              <% } else { %>
+                <% var _diff=Date.now() - new Date(post.createdAt).getTime(); var _mins=Math.floor(_diff / 60000); var
+                  _hrs=Math.floor(_diff / 3600000); var _timeStr; if (_mins < 1) _timeStr='just now' ; else if (_mins <
+                  60) _timeStr=_mins + ' min ago' ; else if (_hrs < 24) _timeStr=_hrs + ' hour' + (_hrs===1 ? '' : 's' )
+                  + ' ago' ; else _timeStr=new Date(post.createdAt).toLocaleDateString('en-GB', { day:'numeric',
+                  month:'long', year:'numeric' }); %>
+                  <%= _timeStr %>
+              <% } %>
             </div>
           </div>
         </div>
@@ -280,6 +284,9 @@
     <% var alreadyJoined=false; var myRejected=false; var _activeVolCount=post.volunteers.filter(function(v){ return
       v.status==='pending' || v.status==='attended' ; }).length; var slotsFull=post.maxVolunteers> 0 && _activeVolCount
       >= post.maxVolunteers;
+      var signupClosed = false;
+      if (post.volunteerDate) { var _vd = new Date(post.volunteerDate); _vd.setHours(0,0,0,0); var _td = new Date();
+      _td.setHours(0,0,0,0); signupClosed = _td >= _vd; }
       if (userId) {
       for (var vi = 0; vi < post.volunteers.length; vi++) { if (post.volunteers[vi].user &&
         post.volunteers[vi].user.toString()===userId.toString()) { if (post.volunteers[vi].status==='rejected' ) {
@@ -298,6 +305,12 @@
                   <span class="badge bg-success px-3 py-2" style="font-size:0.9rem;">
                     <i class="bi bi-check-circle me-1"></i> Attended
                   </span>
+                  <% if (myEntry && myEntry.contributionNote) { %>
+                    <p class="text-muted small mt-3 mb-0">
+                      <strong>Contribution Note:</strong>
+                      <%= myEntry.contributionNote %>
+                    </p>
+                  <% } %>
                   <% } else if (myStatus==='rejected' ) { %>
                     <div>
                       <span class="badge bg-danger px-3 py-2 mb-2" style="font-size:0.9rem;">
@@ -345,12 +358,16 @@
                               <% } else if (slotsFull) { %>
                                 <span class="badge bg-secondary px-3 py-2" style="font-size:0.9rem;">Volunteer limit
                                   reached</span>
-                                <% } else { %>
-                                  <button class="btn btn-success px-4 rounded-pill" data-bs-toggle="modal"
-                                    data-bs-target="#volunteerModal">
-                                    <i class="bi bi-hand-thumbs-up me-1"></i> Join as Volunteer
-                                  </button>
-                                  <% } %>
+                                <% } else if (signupClosed) { %>
+                                  <span class="badge bg-secondary px-3 py-2" style="font-size:0.9rem;">
+                                    <i class="bi bi-calendar-x me-1"></i>Signup closed — event date has passed
+                                  </span>
+                                  <% } else { %>
+                                    <button class="btn btn-success px-4 rounded-pill" data-bs-toggle="modal"
+                                      data-bs-target="#volunteerModal">
+                                      <i class="bi bi-hand-thumbs-up me-1"></i> Join as Volunteer
+                                    </button>
+                                    <% } %>
             </div>
           </div>
           <% } %>
@@ -396,9 +413,11 @@
                             <div class="comment-block <%= comment.isPinned ? 'pinned' : '' %>">
                               <div class="d-flex justify-content-between align-items-start">
                                 <div>
-                                  <a href="/users/<%= comment.author._id %>" class="comment-author-link">
-                                    <%= comment.author.communityName || comment.author.organizationName ||
-                                      comment.author.fullName %>
+                                  <a href="/users/<%= comment.author._id %>"
+                                    class="comment-author-link d-inline-flex align-items-center gap-1">
+                                    <span><%= comment.author.communityName || comment.author.organizationName ||
+                                      comment.author.fullName %></span>
+                                    <%- include('../partials/volunteerBadge', { user: comment.author }) %>
                                   </a>
                                   <% if (comment.isPinned) { %>
                                     <span class="badge ms-2"
@@ -479,9 +498,10 @@
                                                 <div class="d-flex justify-content-between align-items-start">
                                                   <div>
                                                     <a href="/users/<%= reply.author._id %>"
-                                                      class="comment-author-link">
-                                                      <%= reply.author.communityName || reply.author.organizationName ||
-                                                        reply.author.fullName %>
+                                                      class="comment-author-link d-inline-flex align-items-center gap-1">
+                                                      <span><%= reply.author.communityName || reply.author.organizationName ||
+                                                        reply.author.fullName %></span>
+                                                      <%- include('../partials/volunteerBadge', { user: reply.author }) %>
                                                     </a>
                                                     <span class="text-muted ms-2" style="font-size:0.75rem;">
                                                       <%= reply.createdAt.toLocaleDateString('en-GB', { day:'numeric',

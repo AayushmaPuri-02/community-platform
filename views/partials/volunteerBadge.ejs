@@ -1,0 +1,10 @@
+<% if (user && user.role === 'citizen') { %>
+  <% var volunteerBadge = typeof getVolunteerBadge === 'function' ? getVolunteerBadge(user) : null; %>
+  <% if (volunteerBadge) { %>
+    <span class="volunteer-badge volunteer-badge--<%= volunteerBadge.level %>"
+      title="<%= volunteerBadge.title %>"
+      aria-label="<%= volunteerBadge.title %>">
+      <i class="bi bi-shield-fill"></i>
+    </span>
+  <% } %>
+<% } %>

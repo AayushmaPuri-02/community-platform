@@ -4,17 +4,10 @@
         ← Back to Reports
     </a>
 
-    <% var reasonLabels={}; %>
-        <% reasonLabels.spam="Spam" ; %>
-            <% reasonLabels.misinformation="Misinformation" ; %>
-                <% reasonLabels.harassment="Harassment" ; %>
-                    <% reasonLabels.hate_speech="Hate Speech" ; %>
-                        <% reasonLabels.scam_fraud="Scam / Fraud" ; %>
-                            <% reasonLabels.inappropriate="Inappropriate Content" ; %>
                                 <% var reviewBase="/admin/reports/post/" + post._id; %>
                                     <% var anyWarningSent=false; %>
                                         <% for (var ri=0; ri < reports.length; ri++) { if
-                                            (reports[ri].warningSent===true) { anyWarningSent=true; break; } } %>
+                                            (reports[ri].status==='reviewed' || reports[ri].warningSent===true) { anyWarningSent=true; break; } } %>
                                             <div class="card border-0 shadow-sm rounded-4 mb-4">
                                                 <div class="card-body p-4">
 
@@ -60,7 +53,7 @@
                                                         <%= post.title %>
                                                     </h2>
 
-                                                    <p class="text-muted small mb-3">
+                                                    <p class="text-muted small mb-2">
                                                         Posted by
                                                         <a href="/admin/reports/user/<%= post.author._id %>?from=<%= encodeURIComponent(reviewBase) %>"
                                                             class="text-decoration-none fw-semibold"
@@ -68,27 +61,35 @@
                                                             <%= post.author.communityName ||
                                                                 post.author.organizationName || post.author.fullName %>
                                                         </a>
+                                                        <% if (post.author.isSuspended) { %>
+                                                            <span class="badge bg-danger rounded-pill ms-1" style="font-size:0.68rem;">Suspended</span>
+                                                        <% } %>
                                                         &middot;
                                                         <%= post.createdAt.toLocaleDateString('en-GB', { day:'numeric',
                                                             month:'long', year:'numeric' }) %>
                                                     </p>
 
-                                                    <% if (post.images && post.images.length> 0) { %>
+                                                    <%- include('../partials/adminSuspensionControls', {
+                                                        targetUser: post.author,
+                                                        returnTo: reviewBase,
+                                                        suspendLabel: 'Suspend Author',
+                                                        unsuspendLabel: 'Unsuspend Author'
+                                                    }) %>
+
+                                                    <% if (post.images && post.images.length > 0) { %>
                                                         <div class="row g-2 mb-3">
                                                             <% post.images.forEach(function(img) { %>
-                                                                <div
-                                                                    class="<%= post.images.length === 1 ? 'col-12' : 'col-md-6' %>">
+                                                                <div class="<%= post.images.length === 1 ? 'col-12' : 'col-md-6' %>">
                                                                     <img src="<%= img.url %>" class="w-100 rounded-3"
-                                                                        style="height:220px; object-fit:cover;"
-                                                                        alt="Post image">
+                                                                        style="height:220px; object-fit:cover;" alt="Post image">
                                                                 </div>
-                                                                <% }); %>
+                                                            <% }); %>
                                                         </div>
-                                                        <% } %>
+                                                    <% } %>
 
-                                                            <div class="text-secondary"
-                                                                style="line-height:1.8; font-size:0.97rem; white-space:pre-line;">
-                                                                <%= post.description %>
+                                                            <div class="text-secondary admin-post-markdown"
+                                                                style="line-height:1.8; font-size:0.97rem;">
+                                                                <%- post.renderedDescription || post.description %>
                                                             </div>
 
                                                             <% if (post.tags && post.tags.length> 0) { %>
@@ -117,9 +118,8 @@
                                                         <div
                                                             class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
                                                             <div>
-                                                                <span
-                                                                    class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle rounded-pill px-2 me-2">
-                                                                    <%= reasonLabels[report.reason] || report.reason %>
+                                                                <span class="report-reason-text me-2">
+                                                                    <%= getReasonLabel(report.reason) %>
                                                                 </span>
                                                                 <span class="text-muted small">
                                                                     Reported on
@@ -128,16 +128,21 @@
                                                                         %>
                                                                 </span>
                                                             </div>
-                                                            <div class="d-flex align-items-center gap-2">
-                                                                <% if (report.warningSent) { %>
-                                                                    <!-- Remove reviewed report -->
+                                                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                                <% if (report.status !== 'reviewed' && !report.warningSent) { %>
+                                                                    <form action="/admin/reports/<%= report._id %>/dismiss" method="POST" class="m-0">
+                                                                        <input type="hidden" name="returnTo" value="<%= reviewBase %>">
+                                                                        <button type="submit" class="btn btn-sm btn-outline-secondary rounded-pill px-3" style="font-size:11px;">Dismiss</button>
+                                                                    </form>
+                                                                <% } %>
+                                                                <% if (report.warningSent || report.status === 'reviewed') { %>
                                                                     <button type="button"
                                                                         class="btn btn-sm btn-outline-danger rounded-pill px-3"
                                                                         style="font-size:11px;" data-bs-toggle="modal"
                                                                         data-bs-target="#deleteReportModal-<%= report._id %>">
                                                                         <i class="bi bi-trash me-1"></i>Remove Record
                                                                     </button>
-                                                                    <% } %>
+                                                                <% } %>
                                                             </div>
                                                         </div>
 
@@ -223,6 +228,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form id="warnForm" method="POST" action="/admin/reports/<%= reports[0] ? reports[0]._id : '' %>/warn">
+                <input type="hidden" name="returnTo" value="<%= reviewBase %>">
                 <div class="modal-body">
                     <p class="text-muted small mb-1">
                         Sending warning to post author: <strong>
@@ -298,3 +304,13 @@
         });
     })();
 </script>
+
+<style>
+    .report-reason-text {
+        color: #dc3545;
+        font-size: 12.5px;
+        font-weight: 500;
+    }
+    .admin-post-markdown p:last-child { margin-bottom: 0; }
+    .admin-post-markdown strong { font-weight: 600; }
+</style>

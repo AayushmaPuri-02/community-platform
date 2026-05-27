@@ -69,20 +69,35 @@
                     <form action="/settings/password" method="POST">
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Current Password</label>
-                            <input type="password" name="currentPassword" class="form-control"
-                                placeholder="Enter current password" required>
+                            <div class="password-toggle-wrap">
+                                <input type="password" name="currentPassword" class="form-control"
+                                    placeholder="Enter current password" required>
+                                <button type="button" class="password-toggle-btn" aria-label="Show password">
+                                    <i class="bi bi-eye" aria-hidden="true"></i>
+                                </button>
+                            </div>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label fw-semibold">New Password</label>
-                            <input type="password" name="newPassword" id="newPassword" class="form-control"
-                                placeholder="At least 6 characters" required>
+                            <div class="password-toggle-wrap">
+                                <input type="password" name="newPassword" id="newPassword" class="form-control"
+                                    placeholder="At least 6 characters" required>
+                                <button type="button" class="password-toggle-btn" aria-label="Show password">
+                                    <i class="bi bi-eye" aria-hidden="true"></i>
+                                </button>
+                            </div>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Confirm New Password</label>
-                            <input type="password" name="confirmNewPassword" id="confirmNewPassword"
-                                class="form-control" placeholder="Re-enter new password" required>
+                            <div class="password-toggle-wrap">
+                                <input type="password" name="confirmNewPassword" id="confirmNewPassword"
+                                    class="form-control" placeholder="Re-enter new password" required>
+                                <button type="button" class="password-toggle-btn" aria-label="Show password">
+                                    <i class="bi bi-eye" aria-hidden="true"></i>
+                                </button>
+                            </div>
                             <div class="invalid-feedback">Passwords do not match.</div>
                         </div>
 

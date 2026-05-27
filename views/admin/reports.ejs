@@ -1,113 +1,207 @@
-<% var reasonLabels={ spam:'Spam', misinformation:'Misinformation', harassment:'Harassment', hate_speech:'Hate Speech',
-    scam_fraud:'Scam / Fraud', inappropriate:'Inappropriate Content' }; %>
+<% function accountName(u) { return u ? (u.communityName || u.organizationName || u.fullName || 'Unknown') : '—'; } %>
+<% function roleLabel(r) {
+  if (r === 'communityAdmin') return 'Community Admin';
+  if (r === 'organization') return 'Organization';
+  if (r === 'citizen') return 'Citizen';
+  return r || '—';
+} %>
 
-    <% if (reports.length===0) { %>
-        <div class="card border-0 shadow-sm rounded-4 p-5 text-center">
-            <p class="text-muted mb-0"><i class="bi bi-flag me-2"></i>No reports yet.</p>
-        </div>
-        <% } else { %>
-            <div class="card border-0 shadow-sm rounded-4 p-4">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0" style="font-size:13px;">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Post</th>
-                                <th>Post Author</th>
-                                <th>Reported By</th>
-                                <th>Reason</th>
-                                <th>Date</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% reports.forEach(function(report) { %>
-                                <tr>
-                                    <td class="align-middle">
-                                        <% if (report.post) { %>
-                                            <% var t=report.post.title || '' ; %>
-                                                <a href="/admin/reports/post/<%= report.post._id %>"
-                                                    class="text-decoration-none fw-semibold" style="color:#04888D;"
-                                                    title="<%= t %>">
-                                                    <%= t.length> 40 ? t.slice(0, 40).trimEnd() + '…' : t %>
-                                                </a>
-                                                <% } else { %>
-                                                    <span class="text-muted">[Post deleted]</span>
-                                                    <% } %>
-                                    </td>
-                                    <td class="align-middle text-muted">
-                                        <% if (report.post && report.post.author) { %>
-                                            <%= report.post.author.organizationName || report.post.author.fullName %>
-                                                <% } else { %>—<% } %>
-                                    </td>
-                                    <td class="align-middle text-muted">
-                                        <% if (report.reportedBy) { %>
-                                            <%= report.reportedBy.organizationName || report.reportedBy.fullName %>
-                                                <% } else { %>—<% } %>
-                                    </td>
-                                    <td class="align-middle">
-                                        <span
-                                            class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle rounded-pill px-2"
-                                            style="font-size:11px;">
-                                            <%= reasonLabels[report.reason] || report.reason %>
-                                        </span>
-                                    </td>
-                                    <td class="align-middle text-muted" style="white-space:nowrap;">
-                                        <%= report.createdAt.toLocaleDateString('en-GB', { day:'numeric', month:'short',
-                                            year:'numeric' }) %>
-                                    </td>
-                                </tr>
-                                <% }); %>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+<h6 class="fw-bold mb-3" style="color:#04888D;">Post Reports</h6>
+<% if (!postReports || postReports.length === 0) { %>
+  <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+    <p class="text-muted small mb-0">No open post reports.</p>
+  </div>
+<% } else { %>
+  <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" style="font-size:13px;">
+        <thead class="table-light">
+          <tr>
+            <th>Post</th>
+            <th>Post Author</th>
+            <th>Reported By</th>
+            <th>Reason</th>
+            <th>Date</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% postReports.forEach(function(report) { %>
+            <tr>
+              <td class="align-middle">
+                <% if (report.post) { %>
+                  <% var t = report.post.title || ''; %>
+                  <a href="/admin/reports/post/<%= report.post._id %>"
+                    class="text-decoration-none fw-semibold" style="color:#04888D;" title="<%= t %>">
+                    <%= t.length > 40 ? t.slice(0, 40).trimEnd() + '…' : t %>
+                  </a>
+                <% } else { %>
+                  <span class="text-muted">[Post deleted]</span>
+                <% } %>
+              </td>
+              <td class="align-middle text-muted"><%= accountName(report.post && report.post.author) %></td>
+              <td class="align-middle text-muted"><%= accountName(report.reportedBy) %></td>
+              <td class="align-middle">
+                <span class="report-reason-text"><%= getReasonLabel(report.reason) %></span>
+              </td>
+              <td class="align-middle text-muted" style="white-space:nowrap;">
+                <%= report.createdAt.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) %>
+              </td>
+              <td class="align-middle" style="white-space:nowrap;">
+                <% if (report.post) { %>
+                  <a href="/admin/reports/post/<%= report.post._id %>" class="btn btn-sm btn-outline-primary rounded-pill px-3" style="font-size:11.5px;">View</a>
+                <% } %>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<% } %>
+
+<h6 class="fw-bold mb-3" style="color:#04888D;">Account Reports</h6>
+<% if (!accountReports || accountReports.length === 0) { %>
+  <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+    <p class="text-muted small mb-0">No open account reports.</p>
+  </div>
+<% } else { %>
+  <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" style="font-size:13px;">
+        <thead class="table-light">
+          <tr>
+            <th>Reported Account</th>
+            <th>Role</th>
+            <th>Reported By</th>
+            <th>Reason</th>
+            <th>Date</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% accountReports.forEach(function(report) { %>
+            <tr>
+              <td class="align-middle fw-semibold">
+                <% if (report.reportedUser) { %>
+                  <a href="/admin/reports/user/<%= report.reportedUser._id %>?from=/admin/reports"
+                    class="text-decoration-none" style="color:#04888D;">
+                    <%= accountName(report.reportedUser) %>
+                  </a>
+                <% } else { %>
+                  <span class="text-muted">[User removed]</span>
+                <% } %>
+              </td>
+              <td class="align-middle text-muted" style="font-size:12px;"><%= roleLabel(report.reportedUser && report.reportedUser.role) %></td>
+              <td class="align-middle text-muted"><%= accountName(report.reportedBy) %></td>
+              <td class="align-middle">
+                <span class="report-reason-text"><%= getReasonLabel(report.reason) %></span>
+              </td>
+              <td class="align-middle text-muted" style="white-space:nowrap;">
+                <%= report.createdAt.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) %>
+              </td>
+              <td class="align-middle">
+                <% if (report.reportedUser) { %>
+                  <a href="/admin/reports/user/<%= report.reportedUser._id %>?from=/admin/reports"
+                    class="btn btn-sm btn-outline-primary rounded-pill px-3" style="font-size:11.5px;">View</a>
+                <% } %>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<% } %>
+
+<% if (warnedUsers && warnedUsers.length > 0) { %>
+  <h6 class="fw-bold mt-2 mb-1" style="color:#04888D;">Warned Accounts</h6>
+  <p class="text-muted small mb-3" style="font-size:11.5px;">
+  Suspension is applied manually by the system admin after reviewing report history and context.
+  </p>
+  <div class="card border-0 shadow-sm rounded-4 p-4">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0" style="font-size:13px;">
+        <thead class="table-light">
+          <tr>
+            <th>Name</th>
+            <th>Role</th>
+            <th>Warnings</th>
+            <th>Account Status</th>
+            <th>Latest Warning</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% warnedUsers.forEach(function(u) { %>
+            <% var latest = u.warningHistory[u.warningHistory.length - 1]; %>
+            <% var warnReturnTo = '/admin/reports'; %>
+            <tr>
+              <td class="align-middle">
+                <a href="/admin/reports/user/<%= u._id %>?from=/admin/reports" class="fw-semibold text-decoration-none" style="color:#04888D;">
+                  <%= accountName(u) %>
+                </a>
+                <% if (u.isSuspended) { %>
+                  <span class="badge bg-danger rounded-pill ms-1" style="font-size:0.65rem;">Suspended</span>
+                <% } %>
+              </td>
+              <td class="align-middle text-muted" style="font-size:12px;"><%= roleLabel(u.role) %></td>
+              <td class="align-middle"><%= u.warningHistory.length %></td>
+              <td class="align-middle" style="font-size:12px;">
+                <% if (u.isSuspended) { %>
+                  <span class="text-danger fw-semibold">Suspended</span>
+                <% } else { %>
+                  <span class="text-success">Active</span>
+                <% } %>
+              </td>
+              <td class="align-middle text-muted" style="white-space:nowrap;">
+                <%= latest ? new Date(latest.warnedAt).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '—' %>
+              </td>
+              <td class="align-middle" style="white-space:nowrap;">
+                <% if (u.role !== 'systemAdmin') { %>
+                  <% if (u.isSuspended) { %>
+                    <form action="/admin/users/<%= u._id %>/unsuspend" method="POST" class="d-inline m-0"
+                      onsubmit="return confirm('Are you sure you want to unsuspend this account?');">
+                      <input type="hidden" name="returnTo" value="<%= warnReturnTo %>">
+                      <button type="submit" class="btn btn-sm btn-outline-success rounded-pill px-2" style="font-size:11px;">Unsuspend</button>
+                    </form>
+                  <% } else { %>
+                    <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2" style="font-size:11px;"
+                      data-bs-toggle="collapse" data-bs-target="#suspend-warn-<%= u._id %>" aria-expanded="false">
+                      Suspend
+                    </button>
+                  <% } %>
+                <% } %>
+              </td>
+            </tr>
+            <% if (!u.isSuspended && u.role !== 'systemAdmin') { %>
+            <tr class="collapse" id="suspend-warn-<%= u._id %>">
+              <td colspan="6" class="bg-light border-0 pt-0 pb-3">
+                <form action="/admin/users/<%= u._id %>/suspend" method="POST" class="row g-2 align-items-end admin-suspend-form">
+                  <input type="hidden" name="returnTo" value="<%= warnReturnTo %>">
+                  <div class="col-md-9">
+                    <label class="form-label small mb-0">Reason (optional)</label>
+                    <input type="text" name="suspendedReason" class="form-control form-control-sm" maxlength="500"
+                      placeholder="Brief suspension reason">
+                  </div>
+                  <div class="col-md-3">
+                    <button type="submit" class="btn btn-sm btn-danger rounded-pill w-100 js-suspend-confirm-btn">Suspend Account</button>
+                  </div>
+                </form>
+              </td>
+            </tr>
             <% } %>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<% } %>
 
-                <% if (warnedUsers && warnedUsers.length> 0) { %>
-                    <h6 class="fw-bold mt-4 mb-3" style="color:#04888D;">Warned Accounts</h6>
-                    <div class="card border-0 shadow-sm rounded-4 p-4">
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0" style="font-size:13px;">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Role</th>
-                                        <th>Warnings</th>
-                                        <th>Latest Warning</th>
-                                        <th></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <% warnedUsers.forEach(function(u) { %>
-                                        <% var latest=u.warningHistory[u.warningHistory.length - 1]; %>
-                                            <tr>
-                                                <td class="align-middle fw-semibold">
-                                                    <%= u.communityName || u.organizationName || u.fullName %>
-                                                </td>
-                                                <td class="align-middle text-muted text-capitalize"
-                                                    style="font-size:12px;">
-                                                    <%= u.role==='communityAdmin' ? 'Community Admin' : u.role %>
-                                                </td>
-                                                <td class="align-middle">
-                                                    <span
-                                                        class="badge bg-danger bg-opacity-10 text-danger border border-danger-subtle rounded-pill px-2">
-                                                        <%= u.warningHistory.length %>
-                                                    </span>
-                                                </td>
-                                                <td class="align-middle text-muted" style="white-space:nowrap;">
-                                                    <%= latest ? new Date(latest.warnedAt).toLocaleDateString('en-GB', {
-                                                        day:'numeric', month:'short', year:'numeric' }) : '—' %>
-                                                </td>
-                                                <td class="align-middle">
-                                                    <a href="/admin/directory/<%= u._id %>"
-                                                        class="btn btn-sm btn-outline-secondary rounded-pill px-3"
-                                                        style="font-size:11.5px;">
-                                                        View Profile
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                            <% }); %>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <% } %>
+<style>
+  .report-reason-text {
+    color: #dc3545;
+    font-size: 12.5px;
+    font-weight: 500;
+  }
+</style>

@@ -18,7 +18,7 @@
               </a>
             </h5>
             <small class="text-muted fw-light">
-              <%= post.createdAt.toLocaleDateString('en-US', { month: 'long' , day: 'numeric' , year: 'numeric' }) %>
+              <%= post.type === 'alert' ? formatAlertDate(post.createdAt) : post.createdAt.toLocaleDateString('en-US', { month: 'long' , day: 'numeric' , year: 'numeric' }) %>
             </small>
           </div>
 

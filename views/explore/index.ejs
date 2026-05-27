@@ -3,20 +3,32 @@
 
   <div style="max-width:1100px; margin:0 auto;">
 
-    <h2 class="mb-4 fw-bold">Explore</h2>
+    <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-3 mb-4">
+      <h2 class="mb-0 fw-bold">Explore</h2>
+      <div class="position-relative" style="width:100%; max-width:360px;">
+        <i class="bi bi-search position-absolute text-muted"
+          style="left:12px; top:50%; transform:translateY(-50%); font-size:14px;"></i>
+        <input type="search" id="exploreSearch" class="form-control ps-5 rounded-pill border shadow-sm"
+          placeholder="Search organizations and communities..." autocomplete="off"
+          aria-label="Search organizations and communities">
+      </div>
+    </div>
 
-    <div class="row g-4">
+    <p id="exploreSearchEmpty" class="text-muted small text-center py-4" style="display:none;">
+      No organizations or communities match your search.
+    </p>
+
+    <div class="row g-4" id="exploreColumns">
 
       <!-- ── Organizations ──────────────────────────────────────────────── -->
       <div class="col-lg-6">
         <h5 class="fw-bold mb-3"><i class="bi bi-building me-2 text-primary"></i>Organizations</h5>
 
-        <% if (orgs.length===0) { %>
-          <p class="text-muted small">No organizations found.</p>
-          <% } %>
+        <p id="exploreOrgsEmpty" class="text-muted small <%= orgs.length === 0 ? '' : 'd-none' %>">No organizations found.</p>
 
-            <% orgs.forEach(function(p) { %>
-              <div class="card border-0 shadow-sm mb-3" style="border-radius:12px;">
+            <% orgs.forEach(function(p) { var displayName=(p.communityName || p.organizationName || p.fullName || 'Unknown'); %>
+              <div class="card border-0 shadow-sm mb-3 explore-profile-card" style="border-radius:12px;"
+                data-search-name="<%= displayName.toLowerCase() %>" data-role="organization">
                 <div class="card-body d-flex align-items-center gap-3 py-3 px-3">
 
                   <a href="/users/<%= p._id %>" class="flex-shrink-0">
@@ -34,7 +46,7 @@
                   <div class="flex-grow-1 min-width-0">
                     <h6 class="mb-0 fw-bold text-truncate">
                       <a href="/users/<%= p._id %>" class="text-decoration-none text-dark">
-                        <%= p.communityName || p.organizationName || p.fullName || 'Unknown' %>
+                        <%= displayName %>
                       </a>
                     </h6>
                     <% if (p.bio) { %>
@@ -73,12 +85,11 @@
       <div class="col-lg-6">
         <h5 class="fw-bold mb-3"><i class="bi bi-people me-2 text-success"></i>Communities</h5>
 
-        <% if (communities.length===0) { %>
-          <p class="text-muted small">No community pages found.</p>
-          <% } %>
+        <p id="exploreCommunitiesEmpty" class="text-muted small <%= communities.length === 0 ? '' : 'd-none' %>">No community pages found.</p>
 
-            <% communities.forEach(function(p) { %>
-              <div class="card border-0 shadow-sm mb-3" style="border-radius:12px;">
+            <% communities.forEach(function(p) { var displayName=(p.communityName || p.organizationName || p.fullName || 'Unknown'); %>
+              <div class="card border-0 shadow-sm mb-3 explore-profile-card" style="border-radius:12px;"
+                data-search-name="<%= displayName.toLowerCase() %>" data-role="community">
                 <div class="card-body d-flex align-items-center gap-3 py-3 px-3">
 
                   <a href="/users/<%= p._id %>" class="flex-shrink-0">
@@ -96,7 +107,7 @@
                   <div class="flex-grow-1 min-width-0">
                     <h6 class="mb-0 fw-bold text-truncate">
                       <a href="/users/<%= p._id %>" class="text-decoration-none text-dark">
-                        <%= p.communityName || p.organizationName || p.fullName || 'Unknown' %>
+                        <%= displayName %>
                       </a>
                     </h6>
                     <% if (p.bio) { %>
@@ -133,3 +144,52 @@
 
     </div>
   </div>
+
+  <script>
+    (function () {
+      var input = document.getElementById('exploreSearch');
+      var cards = document.querySelectorAll('.explore-profile-card');
+      var globalEmpty = document.getElementById('exploreSearchEmpty');
+      var orgsEmpty = document.getElementById('exploreOrgsEmpty');
+      var communitiesEmpty = document.getElementById('exploreCommunitiesEmpty');
+      var hasOrgCards = document.querySelector('.explore-profile-card[data-role="organization"]');
+      var hasCommunityCards = document.querySelector('.explore-profile-card[data-role="community"]');
+
+      if (!input) return;
+
+      function filterExplore() {
+        var query = input.value.trim().toLowerCase();
+        var visibleOrgs = 0;
+        var visibleCommunities = 0;
+
+        cards.forEach(function (card) {
+          var name = card.getAttribute('data-search-name') || '';
+          var match = !query || name.indexOf(query) !== -1;
+          card.style.display = match ? '' : 'none';
+          if (!match) return;
+          if (card.getAttribute('data-role') === 'community') visibleCommunities++;
+          else visibleOrgs++;
+        });
+
+        var visibleTotal = visibleOrgs + visibleCommunities;
+
+        if (globalEmpty) {
+          globalEmpty.style.display = query && visibleTotal === 0 ? '' : 'none';
+        }
+        if (orgsEmpty && hasOrgCards) {
+          orgsEmpty.classList.toggle('d-none', visibleOrgs > 0);
+          orgsEmpty.textContent = query
+            ? 'No organizations match your search.'
+            : 'No organizations found.';
+        }
+        if (communitiesEmpty && hasCommunityCards) {
+          communitiesEmpty.classList.toggle('d-none', visibleCommunities > 0);
+          communitiesEmpty.textContent = query
+            ? 'No communities match your search.'
+            : 'No community pages found.';
+        }
+      }
+
+      input.addEventListener('input', filterExplore);
+    })();
+  </script>

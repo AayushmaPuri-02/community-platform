@@ -141,6 +141,41 @@
   .attn-count.no-items {
     color: #22c55e;
   }
+
+  /* ── Request status bars ─────────────────────────────────────── */
+  .status-bar-row {
+    margin-bottom: 14px;
+  }
+
+  .status-bar-row:last-child {
+    margin-bottom: 0;
+  }
+
+  .status-bar-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #334155;
+  }
+
+  .status-bar-count {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1e293b;
+  }
+
+  .status-bar-track {
+    height: 10px;
+    background: #f1f5f9;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .status-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    min-width: 4px;
+    transition: width 0.2s ease;
+  }
 </style>
 
 <!-- STAT CARDS -->
@@ -187,7 +222,7 @@
   </div>
 </div>
 
-<!-- ROW 2: Doughnut + Activity -->
+<!-- ROW 2: Status bars + Activity -->
 <div class="row g-4 mb-4">
 
   <div class="col-lg-4">
@@ -195,22 +230,36 @@
       <div class="dash-panel-title">Request Status</div>
       <% if (approvedCount===0 && pendingCount===0 && rejectedCount===0) { %>
         <p class="text-muted small mb-0">No registration data yet.</p>
-        <% } else { %>
-          <div style="max-width:190px; margin:0 auto;">
-            <canvas id="statusPieChart"></canvas>
+      <% } else { %>
+        <% var statusMax = Math.max(approvedCount, pendingCount, rejectedCount, 1); %>
+        <div class="status-bar-row">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="status-bar-label">Approved</span>
+            <span class="status-bar-count"><%= approvedCount %></span>
           </div>
-          <div class="d-flex justify-content-center gap-3 mt-3 flex-wrap" style="font-size:11.5px; color:#64748b;">
-            <span><span
-                style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#22c55e;margin-right:4px;"></span>Approved
-              (<%= approvedCount %>)</span>
-            <span><span
-                style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#f59e0b;margin-right:4px;"></span>Pending
-              (<%= pendingCount %>)</span>
-            <span><span
-                style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#ef4444;margin-right:4px;"></span>Rejected
-              (<%= rejectedCount %>)</span>
+          <div class="status-bar-track">
+            <div class="status-bar-fill" style="width:<%= Math.round((approvedCount / statusMax) * 100) %>%; background:#22c55e;"></div>
           </div>
-          <% } %>
+        </div>
+        <div class="status-bar-row">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="status-bar-label">Pending</span>
+            <span class="status-bar-count"><%= pendingCount %></span>
+          </div>
+          <div class="status-bar-track">
+            <div class="status-bar-fill" style="width:<%= Math.round((pendingCount / statusMax) * 100) %>%; background:#f59e0b;"></div>
+          </div>
+        </div>
+        <div class="status-bar-row">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="status-bar-label">Rejected</span>
+            <span class="status-bar-count"><%= rejectedCount %></span>
+          </div>
+          <div class="status-bar-track">
+            <div class="status-bar-fill" style="width:<%= Math.round((rejectedCount / statusMax) * 100) %>%; background:#ef4444;"></div>
+          </div>
+        </div>
+      <% } %>
     </div>
   </div>
 
@@ -288,32 +337,6 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
   (function () {
-    // Doughnut
-    var pie = document.getElementById('statusPieChart');
-    if (pie) {
-      new Chart(pie, {
-        type: 'doughnut',
-        data: {
-          labels: ['Approved', 'Pending', 'Rejected'],
-          datasets: [{
-            data: [<%= approvedCount %>, <%= pendingCount %>, <%= rejectedCount %>],
-            backgroundColor: ['#22c55e', '#f59e0b', '#ef4444'],
-            borderWidth: 0,
-            hoverOffset: 4,
-          }]
-        },
-        options: {
-          cutout: '66%',
-          plugins: {
-            legend: { display: false },
-            tooltip: { callbacks: { label: function (c) { return ' ' + c.label + ': ' + c.parsed; } } }
-          },
-          responsive: true,
-          maintainAspectRatio: true,
-        }
-      });
-    }
-
     // Bar chart
     var bar = document.getElementById('userBarChart');
     if (bar) {

@@ -103,7 +103,7 @@
                       </a>
                     </div>
                     <div class="text-muted" style="font-size:11.5px;">
-                      <%= relativeTime(post.createdAt) %>
+                      <%= post.type === 'alert' ? formatAlertDate(post.createdAt) : relativeTime(post.createdAt) %>
                     </div>
                   </div>
                 </div>
@@ -318,7 +318,7 @@
                   <%= rp.title %>
                 </div>
                 <div class="rp-meta">
-                  <%= rpAuthor %> &middot; <%= relativeTime(rp.createdAt) %>
+                  <%= rpAuthor %> &middot; <%= rp.type === 'alert' ? formatAlertDate(rp.createdAt) : relativeTime(rp.createdAt) %>
                 </div>
               </a>
               <% }); %>

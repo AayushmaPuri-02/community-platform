@@ -369,7 +369,10 @@
     </div>
   </div>
 
+  <%- include('../partials/adminSuspendConfirmModal') %>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/adminSuspendConfirm.js"></script>
   <script>
     setTimeout(() => {
       document.querySelectorAll('.alert').forEach(el => el.classList.remove('show'));
