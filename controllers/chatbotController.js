@@ -18,6 +18,7 @@ const SYSTEM_PROMPT =
     "8. Notifications: Users receive notifications for key events like volunteer status updates and new posts from followed organizations. " +
     "If asked about a feature that is NOT in the above list, respond: " +
     "'That feature is not currently available in Local Connect.'";
+    
 
 exports.chat = async (req, res) => {
     const userMessage = (req.body.message || "").trim();

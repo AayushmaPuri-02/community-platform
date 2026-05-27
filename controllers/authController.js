@@ -343,6 +343,11 @@ exports.postLogin = async (req, res) => {
       return res.redirect("/login");
     }
 
+    if (user.isSuspended) {
+      req.flash("error", "Your account has been suspended by the system administrator.");
+      return res.redirect("/login");
+    }
+
     // 6. Session
     req.session.userId = user._id;
     req.session.role = user.role;

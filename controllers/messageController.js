@@ -24,7 +24,14 @@ async function getConversationList(currentUser) {
         if (!otherUser) continue;
 
         const otherUserId = otherUser._id.toString();
-        const previewText = msg.isDeleted ? "Message deleted" : msg.text;
+        let previewText = "";
+        if (msg.isDeleted) {
+            previewText = "Message deleted";
+        } else if (msg.text) {
+            previewText = msg.text;
+        } else if (msg.imageUrl) {
+            previewText = "Image";
+        }
 
         if (!conversationMap.has(otherUserId)) {
             conversationMap.set(otherUserId, {
@@ -122,8 +129,9 @@ exports.getChat = async (req, res) => {
 exports.sendMessage = async (req, res) => {
     try {
         const trimmedText = req.body.text ? req.body.text.trim() : "";
+        const imageUrl = req.file ? req.file.path : null;
 
-        if (!trimmedText) {
+        if (!trimmedText && !imageUrl) {
             req.flash("error", "Message cannot be empty");
             return res.redirect(`/messages/${req.params.userId}`);
         }
@@ -132,6 +140,7 @@ exports.sendMessage = async (req, res) => {
             sender: req.session.userId,
             receiver: req.params.userId,
             text: trimmedText,
+            imageUrl,
         });
 
         await newMessage.save();
@@ -167,6 +176,7 @@ exports.deleteMessage = async (req, res) => {
         const otherUserId = message.receiver.toString();
 
         message.text = "";
+        message.imageUrl = null;
         message.isDeleted = true;
         message.deletedBy = req.session.userId;
         await message.save();

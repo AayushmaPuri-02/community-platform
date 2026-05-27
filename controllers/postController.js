@@ -7,6 +7,35 @@ const { sendEmail } = require("../utils/mailer");
 const { createNotification } = require("../utils/notifications");
 const { marked } = require("marked");
 const { generateEmailTemplate } = require("../utils/emailTemplate");
+const { formatAlertDate } = require("../utils/formatAlertDate");
+
+function authorDisplayName(author) {
+  if (!author) return "Unknown";
+  return author.communityName || author.organizationName || author.fullName || "Unknown";
+}
+
+function wantsJsonResponse(req) {
+  return (
+    req.xhr ||
+    req.get("Accept")?.includes("application/json") ||
+    req.headers["x-requested-with"] === "XMLHttpRequest"
+  );
+}
+
+function serializeCommentForApi(comment) {
+  return {
+    _id: comment._id,
+    text: comment.text,
+    createdAt: comment.createdAt,
+    formattedDate: formatAlertDate(comment.createdAt),
+    isPinned: !!comment.isPinned,
+    author: {
+      _id: comment.author._id,
+      name: authorDisplayName(comment.author),
+      profileImage: comment.author.profileImage || "/images/default-avatar.png",
+    },
+  };
+}
 
 // Configure marked: no HTML passthrough, safe defaults
 marked.setOptions({ breaks: true, gfm: true });
@@ -209,6 +238,57 @@ exports.createPost = async (req, res) => {
   }
 };
 
+exports.getPostApi = async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id).populate(
+      "author",
+      "fullName organizationName communityName profileImage"
+    );
+
+    if (!post) {
+      return res.status(404).json({ error: "Post not found" });
+    }
+
+    const comments = await Comment.find({ post: req.params.id, parentComment: null })
+      .populate("author", "fullName organizationName communityName profileImage")
+      .sort({ isPinned: -1, createdAt: -1 });
+
+    const images = [];
+    if (post.images && post.images.length > 0) {
+      post.images.forEach((img) => {
+        if (img.url) images.push({ url: img.url });
+      });
+    } else if (post.postImage && post.postImage.url) {
+      images.push({ url: post.postImage.url });
+    }
+
+    return res.json({
+      post: {
+        _id: post._id,
+        title: post.title,
+        descriptionHtml: marked.parse(post.description || ""),
+        type: post.type,
+        alertCategory: post.alertCategory || "",
+        alertStatus: post.alertStatus || "Active",
+        locationName: post.locationName || "",
+        alertRadius: post.alertRadius || "",
+        createdAt: post.createdAt,
+        formattedDate: formatAlertDate(post.createdAt),
+        images,
+        author: {
+          _id: post.author._id,
+          name: authorDisplayName(post.author),
+          profileImage: post.author.profileImage || "/images/default-avatar.png",
+        },
+      },
+      comments: comments.map(serializeCommentForApi),
+    });
+  } catch (err) {
+    console.error("getPostApi error:", err);
+    return res.status(500).json({ error: "Failed to load post" });
+  }
+};
+
 exports.getPostById = async (req, res) => {
   try {
     const post = await Post.findById(req.params.id).populate("author");
@@ -263,11 +343,15 @@ exports.getPostById = async (req, res) => {
 
 exports.createComment = async (req, res) => {
   const { text } = req.body;
+  const json = wantsJsonResponse(req);
 
   try {
     const trimmedText = text ? text.trim() : "";
 
     if (!trimmedText) {
+      if (json) {
+        return res.status(400).json({ success: false, message: "Comment cannot be empty" });
+      }
       req.flash("error", "Comment cannot be empty");
       return res.redirect(`/posts/${req.params.id}#comments`);
     }
@@ -275,6 +359,9 @@ exports.createComment = async (req, res) => {
     const wordCount = trimmedText.split(/\s+/).filter(Boolean).length;
 
     if (wordCount > 100) {
+      if (json) {
+        return res.status(400).json({ success: false, message: "Comment must not exceed 100 words" });
+      }
       req.flash("error", "Comment must not exceed 100 words");
       return res.redirect(`/posts/${req.params.id}#comments`);
     }
@@ -286,10 +373,22 @@ exports.createComment = async (req, res) => {
     });
 
     await comment.save();
+
+    if (json) {
+      const populated = await Comment.findById(comment._id).populate(
+        "author",
+        "fullName organizationName communityName profileImage"
+      );
+      return res.json({ success: true, comment: serializeCommentForApi(populated) });
+    }
+
     req.flash("success", "Comment added successfully");
     return res.redirect(`/posts/${req.params.id}#comments`);
   } catch (err) {
     console.log(err);
+    if (json) {
+      return res.status(500).json({ success: false, message: "Error adding comment" });
+    }
     req.flash("error", "Error adding comment");
     return res.redirect(`/posts/${req.params.id}#comments`);
   }
