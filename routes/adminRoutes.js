@@ -14,6 +14,9 @@ router.get("/reports", isSystemAdmin, adminController.getReports);
 router.get("/reports/post/:postId", isSystemAdmin, adminController.getReportReview);
 router.get("/reports/user/:userId", isSystemAdmin, adminController.getUserReview);
 router.post("/reports/:id/warn", isSystemAdmin, adminController.sendWarning);
+router.post("/reports/:id/dismiss", isSystemAdmin, adminController.dismissReport);
 router.post("/reports/:id/delete", isSystemAdmin, adminController.deleteReport);
+router.post("/users/:id/suspend", isSystemAdmin, adminController.suspendUser);
+router.post("/users/:id/unsuspend", isSystemAdmin, adminController.unsuspendUser);
 
 module.exports = router;

@@ -12,6 +12,7 @@ const { uploadImage } = require("../middleware/upload");
 const { createNotification } = require("../utils/notifications");
 
 router.get("/posts/create", canCreatePost, postController.getCreatePost);
+router.get("/api/posts/:id", isLoggedIn, postController.getPostApi);
 router.get("/posts/:id", postController.getPostById);
 
 // GET /api/alerts — JSON list of alert posts with valid coordinates
@@ -321,9 +322,19 @@ router.post("/posts/:id/volunteer/:volunteerId/attend", isLoggedIn, async (req, 
       return res.redirect(`/posts/${post._id}`);
     }
 
+    let contributionNote = req.body.contributionNote ? req.body.contributionNote.trim() : "";
+    if (contributionNote.length > 200) {
+      req.flash("error", "Contribution note must be 200 characters or less");
+      const attendRedirectErr = req.body.fromDashboard === "1"
+        ? (req.session.role === "organization" ? "/org-dashboard" : "/community-dashboard")
+        : `/posts/${post._id}`;
+      return res.redirect(attendRedirectErr);
+    }
+
     // Mark attended — permanent
     volunteer.attended = true;
     volunteer.status = "attended";
+    volunteer.contributionNote = contributionNote;
     await post.save();
 
     // Increment volunteerCount once
